@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { getLocal, addBloodDonor } from "./dataStore";
 
 export function BloodSearch({ onBack, lang = "en" }) {
@@ -8,10 +8,11 @@ export function BloodSearch({ onBack, lang = "en" }) {
   const [newDonorName, setNewDonorName] = useState("");
   const [newDonorGroup, setNewDonorGroup] = useState("O+");
   const [newDonorPhone, setNewDonorPhone] = useState("");
-  const [newDonorVillage, setNewDonorVillage] = useState("");
+  const [newDonorVillage, setNewDonorVillage] = useState("Relangi");
   const [emergencyAlertSent, setEmergencyAlertSent] = useState(false);
 
   const bloodGroups = ["All", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
+  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
 
   useEffect(() => {
     setDonors(getLocal("blood_donors"));
@@ -24,18 +25,18 @@ export function BloodSearch({ onBack, lang = "en" }) {
   const handleRegister = (e) => {
     e.preventDefault();
     if (!newDonorName || !newDonorPhone) return;
-    const added = addBloodDonor({
+    addBloodDonor({
       name: newDonorName,
       bloodGroup: newDonorGroup,
       phone: newDonorPhone,
-      village: newDonorVillage || "Local Area",
+      village: newDonorVillage || "Relangi",
       distanceKm: 1.5
     });
     setDonors(getLocal("blood_donors"));
     setShowRegister(false);
     setNewDonorName("");
     setNewDonorPhone("");
-    setNewDonorVillage("");
+    setNewDonorVillage("Relangi");
     alert("Thank you! You are now registered as a Life Saver Voluntary Blood Donor.");
   };
 
@@ -55,9 +56,13 @@ export function BloodSearch({ onBack, lang = "en" }) {
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ fontSize: "36px" }}>🩸</span>
           <div>
-            <h1 style={{ color: "white", fontSize: "20px", margin: 0 }}>Accident Blood Finder</h1>
+            <h1 style={{ color: "white", fontSize: "20px", margin: 0 }}>
+              {lang === "te" ? "ప్రమాద అత్యవసర రక్త నిధి" : "Accident Blood Finder"}
+            </h1>
             <p style={{ color: "#FEE2E2", margin: 0, fontSize: "13px" }}>
-              Instant blood matching for road accident & trauma victims
+              {lang === "te"
+                ? "తణుకు, భీమవరం, రిలంగి పరిధిలోని రక్తదాతల తక్షణ సమాచారం"
+                : "Instant blood matching for road accident & trauma victims"}
             </p>
           </div>
         </div>
@@ -73,22 +78,26 @@ export function BloodSearch({ onBack, lang = "en" }) {
             borderRadius: "10px",
             fontWeight: "bold",
             fontSize: "14px",
+            border: "none",
+            cursor: "pointer",
             boxShadow: "0 4px 10px rgba(0,0,0,0.15)"
           }}
         >
-          🚨 Broadcast Urgent Accident Blood Request
+          🚨 {lang === "te" ? "అత్యవసర రక్త అభ్యర్థనను ప్రసారం చేయండి" : "Broadcast Urgent Accident Blood Request"}
         </button>
       </div>
 
       {emergencyAlertSent && (
         <div style={{ background: "#DCFCE7", border: "1.5px solid #86EFAC", color: "#166534", padding: "12px", borderRadius: "12px", marginBottom: "16px", textAlign: "center" }}>
-          ✅ <strong>Emergency Broadcast Active!</strong> Notified 6 nearest donors and Wardha District Blood Bank.
+          ✅ <strong>Emergency Broadcast Active!</strong> Notified 6 nearest donors & Tanuku Area Hospital Blood Bank.
         </div>
       )}
 
       {/* Blood Group Filter Chips */}
       <div style={{ marginBottom: "16px" }}>
-        <label style={{ marginBottom: "8px" }}>Select Required Blood Group:</label>
+        <label style={{ marginBottom: "8px", fontSize: "13px", fontWeight: "bold" }}>
+          {lang === "te" ? "కావలసిన రక్త వర్గాన్ని ఎంచుకోండి:" : "Select Required Blood Group:"}
+        </label>
         <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
           {bloodGroups.map((bg) => (
             <button
@@ -127,7 +136,7 @@ export function BloodSearch({ onBack, lang = "en" }) {
           <h4 style={{ color: "#0F6CBD", marginBottom: "10px" }}>Register as Volunteer Blood Donor</h4>
           <div style={{ marginBottom: "10px" }}>
             <label>Full Name</label>
-            <input value={newDonorName} onChange={(e) => setNewDonorName(e.target.value)} placeholder="e.g. Anand Shinde" required />
+            <input value={newDonorName} onChange={(e) => setNewDonorName(e.target.value)} placeholder="e.g. Anand Varma" required />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
             <div>
@@ -138,7 +147,9 @@ export function BloodSearch({ onBack, lang = "en" }) {
             </div>
             <div>
               <label>Village / Area</label>
-              <input value={newDonorVillage} onChange={(e) => setNewDonorVillage(e.target.value)} placeholder="e.g. Wardha" />
+              <select value={newDonorVillage} onChange={(e) => setNewDonorVillage(e.target.value)}>
+                {villages.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
             </div>
           </div>
           <div style={{ marginBottom: "12px" }}>
@@ -179,7 +190,7 @@ export function BloodSearch({ onBack, lang = "en" }) {
               </div>
             </div>
             <a
-              href={`tel:${d.phone}`}
+              href={"tel:" + d.phone}
               style={{
                 textDecoration: "none",
                 backgroundColor: "#0D9488",
@@ -201,3 +212,5 @@ export function BloodSearch({ onBack, lang = "en" }) {
     </div>
   );
 }
+
+export default BloodSearch;

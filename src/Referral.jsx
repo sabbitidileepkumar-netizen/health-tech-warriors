@@ -1,15 +1,15 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getLocal, addReferral, updateReferralStatus } from "./dataStore";
 
 const statusSteps = ["Referred", "Reached", "Under Treatment", "Completed"];
 const facilities = [
-  "Nearby PHC (Wardha Rural)",
-  "Community Health Centre (Bhamragad)",
-  "District Civil Hospital (Chandrapur)",
-  "Sevagram Medical Emergency Hub"
+  "Tanuku Government Area Hospital (AH Tanuku)",
+  "Bhimavaram Community Health Centre (CHC)",
+  "Attili 24x7 Primary Health Centre (PHC)",
+  "K.S. Gattu 24x7 Sub-Centre"
 ];
 
-function Referral({ onBack, defaultPatient }) {
+function Referral({ onBack, defaultPatient, lang = "en" }) {
   const [patients, setPatients] = useState([]);
   const [patientName, setPatientName] = useState(defaultPatient ? defaultPatient.name : "");
   const [facility, setFacility] = useState(facilities[0]);
@@ -57,12 +57,12 @@ function Referral({ onBack, defaultPatient }) {
 
       <div className="care-card">
         <h2 style={{ color: "#D97706", marginBottom: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <span>🏥</span> Create Hospital Referral
+          <span>🏥</span> {lang === "te" ? "ఆసుపత్రి రిఫరల్ నమోదు" : "Create Hospital Referral"}
         </h2>
 
         <form onSubmit={handleCreate} style={{ marginBottom: "10px" }}>
           <div style={{ marginBottom: "12px" }}>
-            <label>👤 Select Patient</label>
+            <label>👤 {lang === "te" ? "రోగిని ఎంచుకోండి:" : "Select Patient:"}</label>
             {patients.length > 0 ? (
               <select
                 value={patientName}
@@ -88,7 +88,7 @@ function Referral({ onBack, defaultPatient }) {
           </div>
 
           <div style={{ marginBottom: "12px" }}>
-            <label>🏥 Target Medical Facility</label>
+            <label>🏥 {lang === "te" ? "తరలించాల్సిన ఆసుపత్రి:" : "Target Medical Facility:"}</label>
             <select value={facility} onChange={(e) => setFacility(e.target.value)}>
               {facilities.map((f) => (
                 <option key={f} value={f}>{f}</option>
@@ -97,10 +97,10 @@ function Referral({ onBack, defaultPatient }) {
           </div>
 
           <div style={{ marginBottom: "12px" }}>
-            <label>📝 Reason / Symptoms Summary</label>
+            <label>📝 {lang === "te" ? "లక్షణాలు / రిఫరల్ కారణం:" : "Reason / Symptoms Summary:"}</label>
             <input
               type="text"
-              placeholder="e.g. Severe Dehydration / Chest Pain / Pregnancy Complication"
+              placeholder="e.g. Severe Dehydration / Chest Pain / Snakebite"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
@@ -115,18 +115,20 @@ function Referral({ onBack, defaultPatient }) {
                 style={{ width: "auto" }}
               />
               <span style={{ fontWeight: "bold", fontSize: "13px" }}>
-                🚑 Request 108 Emergency Ambulance for Transport
+                🚑 {lang === "te" ? "108 ఎమర్జెన్సీ అంబులెన్స్ రిక్వెస్ట్ చేయండి" : "Request 108 Emergency Ambulance for Transport"}
               </span>
             </label>
           </div>
 
           <button type="submit" className="btn-primary" style={{ background: "#D97706" }}>
-            ➕ Dispatch & Register Referral
+            ➕ {lang === "te" ? "రిఫరల్ నమోదు చేసి పంపండి" : "Dispatch & Register Referral"}
           </button>
         </form>
       </div>
 
-      <h3 style={{ margin: "16px 0 10px" }}>Active Facility Referrals ({referrals.length})</h3>
+      <h3 style={{ margin: "16px 0 10px" }}>
+        Active Facility Referrals ({referrals.length})
+      </h3>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {referrals.map((r) => (
@@ -144,12 +146,12 @@ function Referral({ onBack, defaultPatient }) {
                 )}
                 {r.ambulanceDispatched && (
                   <span className="badge" style={{ background: "#FEE2E2", color: "#DC2626", marginTop: "4px" }}>
-                    🚑 Ambulance Dispatched
+                    🚑 108 Ambulance Dispatched
                   </span>
                 )}
               </div>
 
-              <span className={`badge ${r.status === "Completed" ? "badge-low" : "badge-med"}`}>
+              <span className={"badge " + (r.status === "Completed" ? "badge-low" : "badge-med")}>
                 {r.status}
               </span>
             </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 
 export function HospitalFinder({ onBack, lang = "en" }) {
   const [selectedCondition, setSelectedCondition] = useState("All");
@@ -6,7 +6,7 @@ export function HospitalFinder({ onBack, lang = "en" }) {
 
   const conditions = [
     "All",
-    "Accident & Trauma",
+    "Snakebite & Trauma",
     "Fever & Infection",
     "Heart & Chest Pain",
     "Pregnancy & Delivery",
@@ -16,49 +16,53 @@ export function HospitalFinder({ onBack, lang = "en" }) {
   const hospitals = [
     {
       id: "h1",
-      name: "Wardha Primary Health Centre (PHC)",
-      type: "Government PHC",
-      distanceKm: 3.2,
-      specialties: ["Fever & Infection", "Pregnancy & Delivery", "General"],
-      beds: 12,
+      name: "Tanuku Government Area Hospital (AH Tanuku)",
+      type: "Sub-District Hospital / Area Hospital",
+      distanceKm: 3.5,
+      specialties: ["Snakebite & Trauma", "Heart & Chest Pain", "Child Specialist", "Pregnancy & Delivery"],
+      beds: 150,
+      icuBeds: 20,
+      asvVials: 42,
       oxygenAvailable: true,
-      phone: "07152-245120",
-      address: "Main Road, Wardha Rural"
+      phone: "08819-224108",
+      address: "Hospital Road, Tanuku, West Godavari"
     },
     {
       id: "h2",
-      name: "Chandrapur District Civil Hospital",
-      type: "District Multi-Specialty Hospital",
-      distanceKm: 18.5,
-      specialties: ["Accident & Trauma", "Heart & Chest Pain", "Child Specialist", "Pregnancy & Delivery"],
-      beds: 180,
-      icuBeds: 24,
+      name: "Bhimavaram Community Health Centre (CHC)",
+      type: "Community Health Centre / 24x7 Emergency Hub",
+      distanceKm: 9.0,
+      specialties: ["Snakebite & Trauma", "Heart & Chest Pain", "Pregnancy & Delivery"],
+      beds: 80,
+      icuBeds: 10,
+      asvVials: 35,
       oxygenAvailable: true,
-      phone: "07172-251001",
-      address: "Civil Lines, Chandrapur"
+      phone: "08816-222450",
+      address: "Bhimavaram Rural, West Godavari"
     },
     {
       id: "h3",
-      name: "Bhamragad Community Health Centre (CHC)",
-      type: "Community Health Centre",
-      distanceKm: 8.0,
-      specialties: ["Fever & Infection", "General", "Pregnancy & Delivery"],
-      beds: 30,
+      name: "Attili 24x7 Primary Health Centre (PHC)",
+      type: "Government 24x7 PHC",
+      distanceKm: 4.8,
+      specialties: ["Fever & Infection", "Pregnancy & Delivery", "Snakebite & Trauma"],
+      beds: 16,
+      asvVials: 14,
       oxygenAvailable: true,
-      phone: "07134-220045",
-      address: "Tehsil Road, Bhamragad"
+      phone: "08819-256102",
+      address: "Main Road, Attili"
     },
     {
       id: "h4",
-      name: "Sevagram Medical Emergency Hub",
-      type: "Tertiary Care Medical College",
-      distanceKm: 12.0,
-      specialties: ["Accident & Trauma", "Heart & Chest Pain", "Child Specialist"],
-      beds: 350,
-      icuBeds: 40,
+      name: "K.S. Gattu Health & Wellness Sub-Centre",
+      type: "Ayushman Arogya Mandir (Sub-Centre)",
+      distanceKm: 6.2,
+      specialties: ["Fever & Infection", "Snakebite & Trauma"],
+      beds: 6,
+      asvVials: 4,
       oxygenAvailable: true,
-      phone: "07152-284341",
-      address: "Sevagram, Wardha"
+      phone: "08819-257004",
+      address: "Gram Panchayat Building, K.S. Gattu"
     }
   ];
 
@@ -82,9 +86,13 @@ export function HospitalFinder({ onBack, lang = "en" }) {
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ fontSize: "34px" }}>🏥</span>
           <div>
-            <h1 style={{ color: "white", fontSize: "19px", margin: 0 }}>Find Hospital by Condition</h1>
+            <h1 style={{ color: "white", fontSize: "19px", margin: 0 }}>
+              {lang === "te" ? "ప్రభుత్వ ఆసుపత్రులు & బెడ్ల వివరాలు" : "Find Hospital & Emergency Beds"}
+            </h1>
             <p style={{ color: "#E0F2FE", margin: 0, fontSize: "13px" }}>
-              Verified government facilities, bed counts & emergency numbers
+              {lang === "te"
+                ? "తణుకు, భీమవరం, అత్తిలి, కె.ఎస్. గట్టు ప్రభుత్వ ఆసుపత్రుల లైవ్ స్టేటస్"
+                : "Verified government facilities across Tanuku, Bhimavaram, Attili & K.S. Gattu"}
             </p>
           </div>
         </div>
@@ -92,15 +100,15 @@ export function HospitalFinder({ onBack, lang = "en" }) {
 
       <input
         type="text"
-        placeholder="🔍 Search hospital name or area..."
+        placeholder={lang === "te" ? "🔍 ఆసుపత్రి లేదా ఊరి పేరు వెతకండి..." : "🔍 Search hospital name or area..."}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         style={{ marginBottom: "12px" }}
       />
 
       <div style={{ marginBottom: "16px" }}>
-        <label>Filter by Medical Need:</label>
-        <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
+        <label style={{ fontSize: "12px", color: "#64748B", fontWeight: "bold" }}>Filter by Medical Need:</label>
+        <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", marginTop: "4px" }}>
           {conditions.map((c) => (
             <button
               key={c}
@@ -132,7 +140,7 @@ export function HospitalFinder({ onBack, lang = "en" }) {
                 <p style={{ margin: "2px 0", fontSize: "12px", color: "#64748B" }}>📍 {h.address} ({h.distanceKm} km away)</p>
               </div>
               <a
-                href={`tel:${h.phone}`}
+                href={"tel:" + h.phone}
                 style={{
                   background: "#0D9488",
                   color: "white",
@@ -147,9 +155,10 @@ export function HospitalFinder({ onBack, lang = "en" }) {
               </a>
             </div>
 
-            <div style={{ display: "flex", gap: "8px", marginTop: "10px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "6px", marginTop: "10px", flexWrap: "wrap" }}>
               <span className="badge badge-low">🛏️ {h.beds} Beds</span>
               {h.icuBeds && <span className="badge badge-med">🚨 {h.icuBeds} ICU Beds</span>}
+              {h.asvVials && <span className="badge badge-high" style={{ background: "#FEE2E2", color: "#991B1B" }}>🐍 {h.asvVials} Anti-Venom Vials</span>}
               {h.oxygenAvailable && <span className="badge" style={{ background: "#E0F2FE", color: "#0369A1" }}>💨 Oxygen Supported</span>}
             </div>
           </div>
@@ -158,3 +167,5 @@ export function HospitalFinder({ onBack, lang = "en" }) {
     </div>
   );
 }
+
+export default HospitalFinder;

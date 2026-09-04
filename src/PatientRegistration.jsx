@@ -1,10 +1,10 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { addPatient } from "./dataStore";
 
-function PatientRegistration({ onBack, t }) {
+function PatientRegistration({ onBack, t, lang = "en" }) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
-  const [village, setVillage] = useState("Ramnagar");
+  const [village, setVillage] = useState("Relangi");
   const [category, setCategory] = useState("Adult");
   const [phone, setPhone] = useState("");
   const [bloodGroup, setBloodGroup] = useState("O+");
@@ -12,7 +12,7 @@ function PatientRegistration({ onBack, t }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const villages = ["Ramnagar", "Bhamragad", "Korpana", "Wardha Rural", "Chandrapur"];
+  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
   const bloodGroups = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
   const handleSubmit = async (e) => {
@@ -54,7 +54,7 @@ function PatientRegistration({ onBack, t }) {
 
       <div className="care-card">
         <h2 style={{ color: "#0F6CBD", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <span>🧑‍🤝‍🧑</span> New Patient Registration
+          <span>🧑‍🤝‍🧑</span> {lang === "te" ? "కొత్త రోగి నమోదు" : "New Patient Registration"}
         </h2>
 
         {message && (
@@ -75,10 +75,10 @@ function PatientRegistration({ onBack, t }) {
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "12px" }}>
-            <label>👤 Full Name</label>
+            <label>👤 {lang === "te" ? "రోగి పూర్తి పేరు" : "Full Name"}</label>
             <input
               type="text"
-              placeholder="e.g. Ramesh Patil"
+              placeholder="e.g. Dileep Varma"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -87,7 +87,7 @@ function PatientRegistration({ onBack, t }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
             <div>
-              <label>🎂 Age</label>
+              <label>🎂 {lang === "te" ? "వయస్సు" : "Age"}</label>
               <input
                 type="number"
                 placeholder="e.g. 35"
@@ -97,7 +97,7 @@ function PatientRegistration({ onBack, t }) {
               />
             </div>
             <div>
-              <label>📋 Category</label>
+              <label>📋 {lang === "te" ? "కేటగిరీ" : "Category"}</label>
               <select value={category} onChange={(e) => setCategory(e.target.value)}>
                 <option value="Child">👶 Child</option>
                 <option value="Woman">👩 Woman</option>
@@ -109,7 +109,7 @@ function PatientRegistration({ onBack, t }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
             <div>
-              <label>🏡 Village</label>
+              <label>🏡 {lang === "te" ? "గ్రామం" : "Village"}</label>
               <select value={village} onChange={(e) => setVillage(e.target.value)}>
                 {villages.map((v) => (
                   <option key={v} value={v}>{v}</option>
@@ -117,7 +117,7 @@ function PatientRegistration({ onBack, t }) {
               </select>
             </div>
             <div>
-              <label>🩸 Blood Group</label>
+              <label>🩸 {lang === "te" ? "రక్త వర్గం" : "Blood Group"}</label>
               <select value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)}>
                 {bloodGroups.map((b) => (
                   <option key={b} value={b}>{b}</option>
@@ -127,7 +127,7 @@ function PatientRegistration({ onBack, t }) {
           </div>
 
           <div style={{ marginBottom: "14px" }}>
-            <label>📱 Phone Number (For Medication Reminders)</label>
+            <label>📱 {lang === "te" ? "మొబైల్ నంబర్ (SMS రిమైండర్ల కొరకు)" : "Phone Number (For SMS Alerts)"}</label>
             <input
               type="tel"
               placeholder="+91 98XXX XXXXX"
@@ -146,7 +146,7 @@ function PatientRegistration({ onBack, t }) {
                 style={{ width: "auto" }}
               />
               <span style={{ fontSize: "13px", color: "#6B21A8", fontWeight: "600" }}>
-                🫀 Patient wishes to pledge as an Organ Donor
+                🫀 {lang === "te" ? "రోగి అవయవ దాతగా నమోదు కావడానికి అంగీకారం" : "Patient pledges as an Organ Donor (NOTTO)"}
               </span>
             </label>
           </div>

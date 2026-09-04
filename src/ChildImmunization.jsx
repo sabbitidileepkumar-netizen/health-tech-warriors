@@ -1,0 +1,216 @@
+import React, { useState, useEffect } from "react";
+import { getLocal, updateChildDoseStatus } from "./dataStore";
+
+export function ChildImmunization({ onBack, lang = "en" }) {
+  const [children, setChildren] = useState([]);
+  const [selectedChildId, setSelectedChildId] = useState("");
+  const [smsAlert, setSmsAlert] = useState(null);
+
+  useEffect(() => {
+    const list = getLocal("child_vaccines");
+    setChildren(list);
+    if (list.length > 0) {
+      setSelectedChildId(list[0].childId);
+    }
+  }, []);
+
+  const activeChild = children.find((c) => c.childId === selectedChildId);
+
+  const handleToggleDose = (childId, doseId, currentStatus) => {
+    const nextStatus = currentStatus === "Completed" ? "Upcoming" : "Completed";
+    const updated = updateChildDoseStatus(childId, doseId, nextStatus);
+    setChildren([...updated]);
+  };
+
+  const handleSendReminder = (child, dose) => {
+    setSmsAlert({
+      phone: child.phone,
+      msg: lang === "te"
+        ? "కేర్ లింక్ ఆశా అలర్ట్: నమస్తే " + child.parentName + " గారు, మీ బిడ్డ " + child.childName + " కి " + dose.name + " టీకా సమయం అయింది. సమీప అంగన్‌వాడీకి తీసుకురండి."
+        : "CareLink ASHA Reminder: Namaste " + child.parentName + ", vaccine dose '" + dose.name + "' is due for " + child.childName + ". Please visit nearest Anganwadi centre."
+    });
+    setTimeout(() => {
+      setSmsAlert(null);
+    }, 7000);
+  };
+
+  const calculateProgress = (doses = []) => {
+    if (doses.length === 0) return 0;
+    const completed = doses.filter((d) => d.status === "Completed").length;
+    return Math.round((completed / doses.length) * 100);
+  };
+
+  return (
+    <div className="page-content">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <button className="btn-outline" onClick={onBack}>⬅️ Back</button>
+        <span className="badge" style={{ background: "#FEF3C7", color: "#B45309" }}>UIP National Schedule</span>
+      </div>
+
+      <div style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)", color: "white", padding: "18px", borderRadius: "16px", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span style={{ fontSize: "36px" }}>👶</span>
+          <div>
+            <h1 style={{ color: "white", fontSize: "19px", margin: 0 }}>
+              {lang === "te" ? "పిల్లల పోలియో & సమగ్ర టీకా షెడ్యూల్" : "Child Polio & National Immunization"}
+            </h1>
+            <p style={{ color: "#FEF3C7", margin: 0, fontSize: "13px" }}>
+              {lang === "te"
+                ? "రెండు చుక్కల పోలియో - సంపూర్ణ రక్షణ. ప్రతి శిశువుకు నిర్ణీత సమయంలో టీకాలు."
+                : "Birth to 5 years longitudinal vaccine tracking & Pulse Polio drives"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Pulse Polio Campaign Alert Box */}
+      <div style={{ background: "#EFF6FF", border: "1.5px solid #93C5FD", borderRadius: "14px", padding: "14px", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "28px" }}>📢</span>
+          <div>
+            <strong style={{ color: "#1D4ED8", fontSize: "14px" }}>
+              {lang === "te" ? "రాష్ట్ర పల్స్ పోలియో ప్రత్యేక డ్రైవ్ 2026" : "Upcoming Pulse Polio Special Campaign 2026"}
+            </strong>
+            <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#1E40AF" }}>
+              {lang === "te"
+                ? "తణుకు, రిలంగి, అత్తిలి పరిధిలోని 0-5 సంవత్సరాల పిల్లలందరికీ బూత్‌లలో చుక్కల మందు వేయబడును."
+                : "Mandatory oral polio drops for all 0-5 yr children across Tanuku, Relangi & Attili Anganwadis."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {smsAlert && (
+        <div style={{ background: "#ECFDF5", border: "1.5px solid #10B981", borderRadius: "12px", padding: "12px", marginBottom: "16px" }}>
+          <strong style={{ color: "#065F46", fontSize: "13px" }}>📲 Simulated SMS Dispatched to {smsAlert.phone}:</strong>
+          <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#047857", fontStyle: "italic" }}>
+            "{smsAlert.msg}"
+          </p>
+        </div>
+      )}
+
+      {/* Child Switcher */}
+      <div style={{ marginBottom: "14px" }}>
+        <label style={{ fontSize: "13px", fontWeight: "bold" }}>
+          👶 {lang === "te" ? "పిల్లల రికార్డును ఎంచుకోండి:" : "Select Registered Child:"}
+        </label>
+        <select
+          value={selectedChildId}
+          onChange={(e) => setSelectedChildId(e.target.value)}
+          style={{ marginTop: "6px" }}
+        >
+          {children.map((c) => (
+            <option key={c.childId} value={c.childId}>
+              {c.childName} ({c.village}) - Parent: {c.parentName}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {activeChild && (
+        <div>
+          {/* Progress Card */}
+          <div className="care-card" style={{ marginBottom: "14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ margin: 0, color: "#0F172A" }}>{activeChild.childName}</h3>
+                <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748B" }}>
+                  DOB: {activeChild.dob} &bull; 🏡 {activeChild.village} &bull; 📞 {activeChild.phone}
+                </p>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <span style={{ fontSize: "20px", fontWeight: "bold", color: "#D97706" }}>
+                  {calculateProgress(activeChild.doses)}%
+                </span>
+                <div style={{ fontSize: "11px", color: "#64748B" }}>Vaccinated</div>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div style={{ width: "100%", background: "#E2E8F0", height: "8px", borderRadius: "4px", marginTop: "10px", overflow: "hidden" }}>
+              <div
+                style={{
+                  width: calculateProgress(activeChild.doses) + "%",
+                  background: "#D97706",
+                  height: "100%",
+                  transition: "width 0.3s ease"
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Doses List */}
+          <h3 style={{ marginBottom: "10px" }}>
+            {lang === "te" ? "టీకాల కాలక్రమం (Immunization Timeline)" : "Vaccine Doses Timeline"}
+          </h3>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {activeChild.doses.map((dose) => {
+              const isDone = dose.status === "Completed";
+              const isDue = dose.status === "Due Today";
+              return (
+                <div
+                  key={dose.id}
+                  className="care-card"
+                  style={{
+                    margin: 0,
+                    borderLeft: isDone ? "6px solid #16A34A" : isDue ? "6px solid #DC2626" : "6px solid #CBD5E1",
+                    background: isDue ? "#FFF5F5" : "white"
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <strong style={{ fontSize: "14px", color: "#0F172A" }}>{dose.name}</strong>
+                        {isDue && <span className="badge badge-high">DUE TODAY</span>}
+                      </div>
+                      <p style={{ margin: "2px 0", fontSize: "12px", color: "#0F6CBD", fontWeight: "600" }}>
+                        ⏰ Target Period: {dose.duePeriod}
+                      </p>
+                      {dose.dateGiven && (
+                        <p style={{ margin: 0, fontSize: "11px", color: "#166534" }}>
+                          ✓ Administered on: {dose.dateGiven}
+                        </p>
+                      )}
+                    </div>
+
+                    <span className={"badge " + (isDone ? "badge-low" : isDue ? "badge-high" : "badge-med")}>
+                      {dose.status}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px", marginTop: "10px", paddingTop: "8px", borderTop: "1px solid var(--border)" }}>
+                    <button
+                      onClick={() => handleToggleDose(activeChild.childId, dose.id, dose.status)}
+                      className="btn-outline"
+                      style={{
+                        flex: 1,
+                        padding: "6px",
+                        fontSize: "12px",
+                        color: isDone ? "#DC2626" : "#16A34A",
+                        borderColor: isDone ? "#DC2626" : "#16A34A"
+                      }}
+                    >
+                      {isDone ? "Mark as Pending" : "✓ Mark Given"}
+                    </button>
+
+                    <button
+                      onClick={() => handleSendReminder(activeChild, dose)}
+                      className="btn-outline"
+                      style={{ padding: "6px 12px", fontSize: "12px", color: "#0F6CBD", borderColor: "#0F6CBD" }}
+                      title="Send SMS Reminder to Parent"
+                    >
+                      📲 Send SMS
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ChildImmunization;
