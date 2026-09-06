@@ -25,16 +25,14 @@ import { AIAssistant } from "./AIAssistant";
 import HospitalFinder from "./HospitalFinder";
 
 function App() {
-  const [lang, setLang] = useState("te"); // Default to Telugu for West Godavari region
-  const [mode, setMode] = useState("citizen"); // "citizen" or "asha"
+  const [lang, setLang] = useState("te");
+  const [mode, setMode] = useState("citizen");
   const [screen, setScreen] = useState("home");
   const [isOnline, setIsOnline] = useState(true);
   const [referralPatient, setReferralPatient] = useState(null);
 
-  // ASHA Authentication State
   const [ashaAuth, setAshaAuth] = useState(null);
 
-  // Location / GPS State
   const [userLocation, setUserLocation] = useState({
     village: "Relangi (Tanuku Mandal)",
     coords: "16.85° N, 81.69° E",
@@ -44,7 +42,6 @@ function App() {
   useEffect(() => {
     initStore();
 
-    // Check stored ASHA session
     const storedAuth = localStorage.getItem("carelink_asha_auth");
     if (storedAuth) {
       try {
@@ -52,7 +49,6 @@ function App() {
       } catch (_e) {}
     }
 
-    // Try HTML5 Geolocation
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -63,7 +59,6 @@ function App() {
           });
         },
         () => {
-          // Fallback location
           setUserLocation({
             village: "Relangi (Tanuku Mandal)",
             coords: "16.852° N, 81.698° E",
@@ -100,7 +95,6 @@ function App() {
   };
 
   const renderAshaScreen = () => {
-    // If not authenticated, require ASHA login
     if (!ashaAuth) {
       return (
         <Login
@@ -206,7 +200,6 @@ function App() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Top Header Bar */}
       <header className="header-bar">
         <div
           className="brand-badge"
@@ -223,7 +216,6 @@ function App() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          {/* 4-Language Selector */}
           <select
             value={lang}
             onChange={(e) => setLang(e.target.value)}
@@ -244,7 +236,6 @@ function App() {
             <option value="mr">मराठी (Marathi)</option>
           </select>
 
-          {/* About Page Button */}
           <button
             onClick={() => setScreen("about")}
             className="btn-outline"
@@ -256,7 +247,6 @@ function App() {
         </div>
       </header>
 
-      {/* GPS Location & Live Beat Bar */}
       <div
         style={{
           background: "#F8FAFC",
@@ -284,9 +274,7 @@ function App() {
         </span>
       </div>
 
-      {/* Mode Switcher & Connectivity Sub-Bar */}
       <div style={{ background: "white", borderBottom: "1px solid var(--border)", padding: "8px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        {/* Dual Mode Switcher Pill */}
         <div className="mode-toggle">
           <button
             className={"mode-btn " + (mode === "citizen" ? "active" : "")}
@@ -309,7 +297,6 @@ function App() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* ASHA Logout if logged in */}
           {mode === "asha" && ashaAuth && (
             <button
               onClick={handleAshaLogout}
@@ -328,7 +315,6 @@ function App() {
             </button>
           )}
 
-          {/* Low-connectivity indicator banner toggle */}
           <div
             onClick={() => setIsOnline(!isOnline)}
             style={{
@@ -351,14 +337,12 @@ function App() {
         </div>
       </div>
 
-      {/* Offline Alert Strip when toggled */}
       {!isOnline && (
         <div className="status-banner status-offline">
           <span>📶 Operating in Offline Local-First Mode (Auto-cached on device)</span>
         </div>
       )}
 
-      {/* Main Content Area */}
       <main style={{ flex: 1 }}>
         {screen === "about" ? (
           <AboutApp onBack={() => setScreen("home")} lang={lang} />
@@ -369,7 +353,6 @@ function App() {
         )}
       </main>
 
-      {/* Bottom Footer */}
       <footer className="no-print" style={{ background: "white", borderTop: "1px solid var(--border)", padding: "10px 16px", textAlign: "center", fontSize: "11px", color: "#94A3B8" }}>
         CareLink Rural Health Lifeline &bull; West Godavari (Relangi &bull; Tanuku &bull; Attili &bull; K.S. Gattu) &bull; Mode: <strong>{mode === "citizen" ? "Citizen View" : ashaAuth ? "ASHA: " + ashaAuth.name : "ASHA Worker Portal"}</strong>
       </footer>
