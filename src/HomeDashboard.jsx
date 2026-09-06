@@ -35,6 +35,7 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
     { key: "triage", label: t.triageScreening || "Triage & Screening", icon: "🩺", color: "#0D9488", bg: "#E6F7F5" },
     { key: "queue", label: t.priorityQueue || "Priority Queue", icon: "📋", color: "#DC2626", bg: "#FEF2F2" },
     { key: "referral", label: t.referral || "PHC Referral", icon: "🏥", color: "#D97706", bg: "#FFFBEB" },
+    { key: "hospital", label: "Find Hospital & Beds", icon: "🚑", color: "#0F6CBD", bg: "#EBF3FC" },
     { key: "polio", label: t.vaccineTracker || "Child Vaccine Tracker", icon: "👶", color: "#F59E0B", bg: "#FEF3C7" },
     { key: "venom", label: t.venomTracker || "Snakebite & ASV Stock", icon: "🐍", color: "#DC2626", bg: "#FEE2E2" },
     { key: "disaster", label: t.disasterMode || "Disaster & Flood Mode", icon: "🌊", color: "#0284C7", bg: "#E0F2FE" },
@@ -48,7 +49,6 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
 
   return (
     <div className="page-content">
-      {/* Header Banner */}
       <div style={{ background: "linear-gradient(135deg, #0F6CBD 0%, #0A4373 100%)", color: "white", padding: "18px", borderRadius: "16px", marginBottom: "16px", boxShadow: "var(--shadow-md)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "32px" }}>👩‍⚕️</span>
@@ -58,7 +58,6 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
           </div>
         </div>
 
-        {/* Quick Stats bar */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "14px" }}>
           <div style={{ background: "rgba(255,255,255,0.15)", padding: "8px 12px", borderRadius: "10px" }}>
             <div style={{ fontSize: "11px", color: "#E0F2FE" }}>Registered Members</div>
@@ -71,7 +70,6 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
         </div>
       </div>
 
-      {/* Disaster Flash Notification if Active */}
       {disasterActive && (
         <div
           onClick={() => onNavigate("disaster")}
@@ -98,7 +96,6 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
         </div>
       )}
 
-      {/* Outbreak Hotspot Alert Bar */}
       {activeOutbreak && (
         <div
           onClick={() => onNavigate("outbreak")}
@@ -118,7 +115,6 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
         </div>
       )}
 
-      {/* Grid of ASHA Tools */}
       <div className="icon-card-grid">
         {menuItems.map((item) => (
           <div
