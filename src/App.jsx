@@ -22,6 +22,7 @@ import { WeatherSeasonalAlerts } from "./WeatherSeasonalAlerts";
 import { DisasterMode } from "./DisasterMode";
 import { SupplyIntelligence } from "./SupplyIntelligence";
 import { AIAssistant } from "./AIAssistant";
+import HospitalFinder from "./HospitalFinder";
 
 function App() {
   const [lang, setLang] = useState("te"); // Default to Telugu for West Godavari region
@@ -178,6 +179,9 @@ function App() {
     }
     if (screen === "ai") {
       return <AIAssistant onBack={() => setScreen("home")} lang={lang} />;
+    }
+    if (screen === "hospital") {
+      return <HospitalFinder onBack={() => setScreen("home")} lang={lang} />;
     }
     if (screen === "records") {
       return <PatientRecords onBack={() => setScreen("home")} lang={lang} />;
