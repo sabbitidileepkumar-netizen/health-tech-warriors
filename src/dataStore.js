@@ -18,9 +18,16 @@ const INITIAL_DATA = {
 };
 
 export function initStore() {
-  // Kept for compatibility; Firestore is now the real source of truth
   for (const [key, initialValue] of Object.entries(INITIAL_DATA)) {
     if (typeof localStorage !== 'undefined' && !localStorage.getItem('carelink_' + key)) {
+      localStorage.setItem('carelink_' + key, JSON.stringify(initialValue));
+    }
+  }
+}
+
+export function resetToDefaults() {
+  if (typeof localStorage !== 'undefined') {
+    for (const [key, initialValue] of Object.entries(INITIAL_DATA)) {
       localStorage.setItem('carelink_' + key, JSON.stringify(initialValue));
     }
   }
@@ -45,15 +52,13 @@ export function saveLocal(key, data) {
   }
 }
 
-// NEW: Real-time subscription — call this to get LIVE updates from Firestore
-// Usage: const unsubscribe = subscribeToCollection('patients', (data) => setPatients(data));
-// Call unsubscribe() when component unmounts (in useEffect cleanup)
+// Real-time subscription — call this to get LIVE updates from Firestore
 export function subscribeToCollection(collectionName, callback) {
   try {
     const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      saveLocal(collectionName, items); // keep local cache for offline fallback
+      saveLocal(collectionName, items);
       callback(items);
     }, (error) => {
       console.warn('Firestore sync error, using local cache:', error.message);
@@ -81,6 +86,11 @@ export async function addTriageRecord(record) {
     timestamp: new Date().toISOString(),
     createdAt: serverTimestamp()
   });
+
+  if (record.village) {
+    incrementVillageCase(record.village, record.symptoms);
+  }
+
   return { id: docRef.id, ...record };
 }
 
@@ -91,4 +101,105 @@ export async function addReferral(refData) {
     createdAt: serverTimestamp()
   });
   return { id: docRef.id, ...refData };
+}
+
+export function updateReferralStatus(id, nextStatus) {
+  const list = getLocal('referrals');
+  const updated = list.map(item => item.id === id ? { ...item, status: nextStatus } : item);
+  saveLocal('referrals', updated);
+  return updated;
+}
+
+export function addMedicineReminder(rem) {
+  const list = getLocal('medicine_reminders');
+  const newRem = { id: 'm_' + Date.now(), ...rem, active: true };
+  list.unshift(newRem);
+  saveLocal('medicine_reminders', list);
+  return newRem;
+}
+
+export function addBloodDonor(donor) {
+  const list = getLocal('blood_donors');
+  const newDonor = { id: 'b_' + Date.now(), ...donor, status: 'Available' };
+  list.unshift(newDonor);
+  saveLocal('blood_donors', list);
+  return newDonor;
+}
+
+export function updateChildDoseStatus(childId, doseId, nextStatus) {
+  const list = getLocal('child_vaccines');
+  const updated = list.map(child => {
+    if (child.childId === childId) {
+      return {
+        ...child,
+        doses: child.doses.map(d => d.id === doseId ? { ...d, status: nextStatus, dateGiven: nextStatus === 'Completed' ? new Date().toISOString().split('T')[0] : null } : d)
+      };
+    }
+    return child;
+  });
+  saveLocal('child_vaccines', updated);
+  return updated;
+}
+
+export function reportVenomIncident(incident) {
+  const list = getLocal('venom_incidents');
+  const newInc = { id: 'vi_' + Date.now(), ...incident, timeAgo: 'Just now' };
+  list.unshift(newInc);
+  saveLocal('venom_incidents', list);
+  return newInc;
+}
+
+export function toggleDisasterActive() {
+  const current = getLocal('disaster_status');
+  const updated = { ...current, active: !current.active };
+  saveLocal('disaster_status', updated);
+  return updated;
+}
+
+export function updateSupplyStock(id, newStock) {
+  const list = getLocal('supply_inventory');
+  const updated = list.map(item => {
+    if (item.id === id) {
+      const status = newStock <= 0 ? 'Stockout' : newStock < item.minBuffer ? 'Low Stock' : 'Healthy';
+      return { ...item, currentStock: newStock, status };
+    }
+    return item;
+  });
+  saveLocal('supply_inventory', updated);
+  return updated;
+}
+
+export function incrementVillageCase(villageName, symptoms = []) {
+  const list = getLocal('village_outbreaks');
+  const existing = list.find(v => v.village.toLowerCase() === villageName.toLowerCase());
+  if (existing) {
+    existing.cases += 1;
+    if (existing.cases >= 100) {
+      existing.hotspot = true;
+      existing.riskLevel = 'EPIDEMIC ALERT (>100 CASES)';
+    }
+    existing.lastUpdated = 'Just now';
+  } else {
+    list.push({
+      village: villageName,
+      cases: 1,
+      primaryCondition: symptoms[0] || 'Reported Illness',
+      riskLevel: 'Normal Range',
+      campDispatched: false,
+      lastUpdated: 'Just now',
+      hotspot: false
+    });
+  }
+  saveLocal('village_outbreaks', list);
+}
+
+export function triggerHealthCampDispatch(villageName) {
+  const list = getLocal('village_outbreaks');
+  const item = list.find(v => v.village.toLowerCase() === villageName.toLowerCase());
+  if (item) {
+    item.campDispatched = true;
+    item.dispatchTime = new Date().toLocaleTimeString();
+    saveLocal('village_outbreaks', list);
+  }
+  return list;
 }
