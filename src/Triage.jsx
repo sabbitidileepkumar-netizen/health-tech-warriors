@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from "react";
-import { getLocal, addTriageRecord } from "./dataStore";
 
+import { subscribeToCollection, addTriageRecord } from "./dataStore";
 const symptomsList = [
   { key: "breathing", label: "Breathing Difficulty", icon: "🫁", weight: 8 },
   { key: "chestPain", label: "Chest Pain / Pressure", icon: "💔", weight: 8 },
@@ -20,11 +20,13 @@ function Triage({ onBack, onNavigateToReferral, t }) {
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
-    const list = getLocal("patients");
-    setPatients(list);
-    if (list.length > 0) {
-      setSelectedPatientId(list[0].id);
-    }
+    const unsub = subscribeToCollection("patients", (list) => {
+      setPatients(list);
+      if (list.length > 0 && !selectedPatientId) {
+        setSelectedPatientId(list[0].id);
+      }
+    });
+    return () => unsub();
   }, []);
 
   const selectedPatient = patients.find((p) => p.id === selectedPatientId);
