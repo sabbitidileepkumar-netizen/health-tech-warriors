@@ -3,13 +3,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAjYt5N7yt9FfeGgLCNqVVWv3cNTP72pZc",
-  authDomain: "health-tech-warriors.firebaseapp.com",
-  projectId: "health-tech-warriors",
-  storageBucket: "health-tech-warriors.firebasestorage.app",
-  messagingSenderId: "98697358497",
-  appId: "1:98697358497:web:303c28aaec069e984714e0",
-  measurementId: "G-L1SECFY2ZC"
+  apiKey: "AIzaSyDnk8-1D6T53x7nRAcFjElQBCucOhME6RI",
+  authDomain: "carelink-db478.firebaseapp.com",
+  projectId: "carelink-db478",
+  storageBucket: "carelink-db478.firebasestorage.app",
+  messagingSenderId: "358127575633",
+  appId: "1:358127575633:web:13fdeb40afff0ad8f0ce70",
+  measurementId: "G-NV5K00NKNJ"
 };
 
 const app = initializeApp(firebaseConfig);
