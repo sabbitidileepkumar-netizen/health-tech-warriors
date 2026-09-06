@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getLocal } from "./dataStore";
+import { getLocal, subscribeToCollection } from "./dataStore";
 
 export function HomeDashboard({ onNavigate, t, lang = "en" }) {
   const [patientCount, setPatientCount] = useState(0);
@@ -8,21 +8,25 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
   const [disasterActive, setDisasterActive] = useState(false);
 
   useEffect(() => {
-    const patients = getLocal("patients");
-    const triages = getLocal("triage_records");
+    const unsub1 = subscribeToCollection("patients", (patients) => {
+      setPatientCount(patients.length);
+    });
+
+    const unsub2 = subscribeToCollection("triage_records", (triages) => {
+      setHighPriorityCount(triages.filter((t) => t.priorityLevel === "HIGH").length);
+    });
+
     const outbreaks = getLocal("village_outbreaks");
-    const disaster = getLocal("disaster_status");
-
-    setPatientCount(patients.length);
-    setHighPriorityCount(triages.filter((t) => t.priorityLevel === "HIGH").length);
-
     const hotspot = outbreaks.find((o) => o.cases >= 100);
-    if (hotspot) {
-      setActiveOutbreak(hotspot);
-    }
-    if (disaster && disaster.active) {
-      setDisasterActive(true);
-    }
+    if (hotspot) setActiveOutbreak(hotspot);
+
+    const disaster = getLocal("disaster_status");
+    if (disaster && disaster.active) setDisasterActive(true);
+
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const menuItems = [
