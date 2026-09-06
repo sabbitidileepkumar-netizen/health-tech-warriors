@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect } from "react";
-
+import React, { useState, useEffect } from "react";
 import { subscribeToCollection, addTriageRecord } from "./dataStore";
+
 const symptomsList = [
   { key: "breathing", label: "Breathing Difficulty", icon: "🫁", weight: 8 },
   { key: "chestPain", label: "Chest Pain / Pressure", icon: "💔", weight: 8 },
@@ -102,7 +102,6 @@ function Triage({ onBack, onNavigateToReferral, t }) {
         </h2>
 
         <form onSubmit={handleSubmit}>
-          {/* Triage dropdown fix: Only registered patients */}
           <div style={{ marginBottom: "14px" }}>
             <label>👤 Select Registered Patient</label>
             {patients.length === 0 ? (
