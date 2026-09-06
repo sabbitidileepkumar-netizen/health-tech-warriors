@@ -1,39 +1,41 @@
 import React, { useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "./firebase";
 
 export function Login({ onLoginSuccess, onCancel, t, lang = "en" }) {
-  const [workerId, setWorkerId] = useState("");
-  const [pin, setPin] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (!workerId.trim() || !pin.trim()) {
-      setError(lang === "te" ? "దయచేసి ఆశా ఐడీ మరియు పిన్ నమోదు చేయండి." : "Please enter ASHA ID and security PIN.");
+    setError("");
+
+    if (!email.trim() || !password.trim()) {
+      setError(lang === "te" ? "దయచేసి ఇమెయిల్ మరియు పాస్‌వర్డ్ నమోదు చేయండి." : "Please enter email and password.");
       return;
     }
 
-    // Authenticate and save session
-    const authData = {
-      workerId: workerId.trim(),
-      name: "Lakshmi Devi (ASHA)",
-      village: "Relangi",
-      beat: "Beat #4 - West Godavari",
-      loginAt: new Date().toISOString()
-    };
-    localStorage.setItem("carelink_asha_auth", JSON.stringify(authData));
-    onLoginSuccess(authData);
-  };
-
-  const handleDemoLogin = () => {
-    const demoData = {
-      workerId: "ASHA-RELANGI-04",
-      name: "Sujatha K (ASHA Lead)",
-      village: "Relangi",
-      beat: "Tanuku Mandal - Beat #4",
-      loginAt: new Date().toISOString()
-    };
-    localStorage.setItem("carelink_asha_auth", JSON.stringify(demoData));
-    onLoginSuccess(demoData);
+    setLoading(true);
+    try {
+      const userCred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const authData = {
+        uid: userCred.user.uid,
+        email: userCred.user.email,
+        name: userCred.user.email.split("@")[0],
+        loginAt: new Date().toISOString()
+      };
+      localStorage.setItem("carelink_asha_auth", JSON.stringify(authData));
+      onLoginSuccess(authData);
+    } catch (err) {
+      setError(
+        lang === "te"
+          ? "తప్పు ఇమెయిల్ లేదా పాస్‌వర్డ్."
+          : "Invalid email or password."
+      );
+    }
+    setLoading(false);
   };
 
   return (
@@ -58,16 +60,13 @@ export function Login({ onLoginSuccess, onCancel, t, lang = "en" }) {
             👩‍⚕️
           </div>
           <h2 style={{ color: "#0F6CBD", margin: 0, fontSize: "21px" }}>
-            {lang === "te" ? "ఆశా కార్యకర్త అధికారిక లాగిన్" : lang === "hi" ? "आशा कार्यकर्ता आधिकारिक लॉगिन" : "ASHA Health Worker Portal"}
+            {lang === "te" ? "ఆశా కార్యకర్త అధికారిక లాగిన్" : "ASHA Health Worker Portal"}
           </h2>
           <p style={{ color: "#64748B", fontSize: "13px", marginTop: "4px" }}>
             {lang === "te"
               ? "ఈ పోర్టల్ గ్రామీణ ఆరోగ్య పర్యవేక్షణ కోసం కేటాయించబడింది"
               : "Authorized clinical intake, triage & village outbreak surveillance"}
           </p>
-          <span className="badge" style={{ background: "#E6F7F5", color: "#0D9488", fontSize: "11px", marginTop: "6px" }}>
-            🛡️ NHM / Govt. of Andhra Pradesh Healthcare Desk
-          </span>
         </div>
 
         {error && (
@@ -79,27 +78,26 @@ export function Login({ onLoginSuccess, onCancel, t, lang = "en" }) {
         <form onSubmit={handleLogin}>
           <div style={{ marginBottom: "14px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600" }}>
-              🆔 {lang === "te" ? "ఆశా వర్కర్ ఐడీ లేదా రిజిస్టర్డ్ మొబైల్" : "ASHA Worker ID / Mobile"}
+              🆔 {lang === "te" ? "ఇమెయిల్" : "Email"}
             </label>
             <input
-              type="text"
-              placeholder="e.g. ASHA-RELANGI-04 or 98480XXXXX"
-              value={workerId}
-              onChange={(e) => setWorkerId(e.target.value)}
+              type="email"
+              placeholder="ashaworker@gmail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1.5px solid var(--border)" }}
             />
           </div>
 
           <div style={{ marginBottom: "18px" }}>
             <label style={{ display: "block", marginBottom: "6px", fontSize: "13px", fontWeight: "600" }}>
-              🔒 {lang === "te" ? "సెక్యూరిటీ పిన్ / పాస్‌వర్డ్" : "Security PIN / Password"}
+              🔒 {lang === "te" ? "పాస్‌వర్డ్" : "Password"}
             </label>
             <input
               type="password"
-              placeholder="••••"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              maxLength={8}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               style={{ width: "100%", padding: "12px", borderRadius: "10px", border: "1.5px solid var(--border)" }}
             />
           </div>
@@ -107,37 +105,12 @@ export function Login({ onLoginSuccess, onCancel, t, lang = "en" }) {
           <button
             type="submit"
             className="btn-primary"
+            disabled={loading}
             style={{ width: "100%", padding: "12px", fontSize: "15px", marginBottom: "12px" }}
           >
-            🔓 {lang === "te" ? "సురక్షితంగా లాగిన్ అవ్వండి" : "Secure ASHA Login"}
+            {loading ? "..." : "🔓 " + (lang === "te" ? "సురక్షితంగా లాగిన్ అవ్వండి" : "Secure ASHA Login")}
           </button>
         </form>
-
-        <div style={{ position: "relative", textAlign: "center", margin: "16px 0" }}>
-          <hr style={{ border: "none", borderTop: "1px solid var(--border)" }} />
-          <span style={{ position: "absolute", top: "-10px", left: "50%", transform: "translateX(-50%)", background: "white", padding: "0 10px", fontSize: "11px", color: "#94A3B8" }}>
-            OR QUICK DEMO
-          </span>
-        </div>
-
-        {/* 1-Click Demo Login for SIH Jury and offline testing */}
-        <button
-          onClick={handleDemoLogin}
-          style={{
-            width: "100%",
-            background: "#ECFDF5",
-            color: "#065F46",
-            border: "1.5px dashed #10B981",
-            padding: "10px",
-            borderRadius: "10px",
-            fontWeight: "bold",
-            fontSize: "13px",
-            cursor: "pointer",
-            marginBottom: "12px"
-          }}
-        >
-          ⚡ {lang === "te" ? "త్వరిత ఆశా డెమో లాగిన్ (రిలంగి బీట్ #4)" : "Quick ASHA Demo Login (Relangi Beat #4)"}
-        </button>
 
         {onCancel && (
           <button
