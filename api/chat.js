@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
-      error: "Method not allowed"
+      error: "Method not allowed",
     });
   }
 
@@ -10,15 +10,14 @@ export default async function handler(req, res) {
 
     if (!apiKey) {
       return res.status(500).json({
-        error:
-          "GEMINI_API_KEY is not configured in Vercel."
+        error: "GEMINI_API_KEY is not configured in Vercel.",
       });
     }
 
     const {
       message,
       language = "en",
-      history = []
+      history = [],
     } = req.body || {};
 
     if (
@@ -27,7 +26,7 @@ export default async function handler(req, res) {
       !message.trim()
     ) {
       return res.status(400).json({
-        error: "Please enter a health question."
+        error: "Please enter a health question.",
       });
     }
 
@@ -35,7 +34,7 @@ export default async function handler(req, res) {
       en: "English",
       te: "Telugu",
       hi: "Hindi",
-      mr: "Marathi"
+      mr: "Marathi",
     };
 
     const selectedLanguage =
@@ -56,9 +55,9 @@ export default async function handler(req, res) {
                 : "user",
             parts: [
               {
-                text: item.text.slice(0, 2000)
-              }
-            ]
+                text: item.text.slice(0, 2000),
+              },
+            ],
           }))
       : [];
 
@@ -71,37 +70,24 @@ general health information.
 
 IMPORTANT SAFETY RULES:
 
-1. You are NOT a doctor and must not claim to diagnose
-   a disease or confirm a diagnosis.
-
-2. Do not prescribe prescription medicines.
-
-3. Do not give dangerous instructions or recommend
-   risky home procedures.
-
-4. If the user's symptoms could represent an emergency,
-   clearly tell them to seek urgent medical attention.
-
-5. Never tell a person to ignore severe symptoms.
-
-6. Explain warning signs clearly.
-
-7. Use simple language that ordinary patients can understand.
-
-8. When important information is missing, ask a small
-   number of useful follow-up questions.
-
-9. Do not invent hospital names, doctors, phone numbers,
-   addresses, test results or medical records.
-
-10. If the user asks something unrelated to health,
-    politely explain that CareLink is designed primarily
-    for health guidance.
-
+1. You are NOT a doctor.
+2. Never claim to diagnose a disease.
+3. Do not prescribe prescription medicines.
+4. Do not give dangerous instructions or risky home procedures.
+5. If symptoms could represent an emergency, clearly advise
+   the person to seek urgent medical attention.
+6. Never tell a person to ignore severe symptoms.
+7. Explain important warning signs clearly.
+8. Use simple language that ordinary patients can understand.
+9. When important information is missing, ask a small number
+   of useful follow-up questions.
+10. Do not invent hospitals, doctors, phone numbers,
+    addresses, test results or medical records.
 11. Always respond in ${selectedLanguage}.
-
-12. Use short sections, bullet points and helpful symbols
-    where appropriate.
+12. Use helpful symbols and short sections where appropriate.
+13. Keep the information educational and general.
+14. If the user asks an unrelated question, politely explain
+    that CareLink is primarily designed for health guidance.
 
 Return ONLY valid JSON matching the requested schema.
 `;
@@ -112,10 +98,10 @@ Return ONLY valid JSON matching the requested schema.
         role: "user",
         parts: [
           {
-            text: message.trim().slice(0, 5000)
-          }
-        ]
-      }
+            text: message.trim().slice(0, 5000),
+          },
+        ],
+      },
     ];
 
     const response = await fetch(
@@ -125,16 +111,16 @@ Return ONLY valid JSON matching the requested schema.
 
         headers: {
           "Content-Type": "application/json",
-          "x-goog-api-key": apiKey
+          "x-goog-api-key": apiKey,
         },
 
         body: JSON.stringify({
           systemInstruction: {
             parts: [
               {
-                text: systemInstruction
-              }
-            ]
+                text: systemInstruction,
+              },
+            ],
           },
 
           contents,
@@ -142,115 +128,116 @@ Return ONLY valid JSON matching the requested schema.
           generationConfig: {
             temperature: 0.2,
 
-            responseMimeType:
-              "application/json",
+            responseFormat: {
+              text: {
+                mimeType: "application/json",
 
-            responseSchema: {
-              type: "object",
+                schema: {
+                  type: "object",
 
-              properties: {
-                language: {
-                  type: "string"
-                },
-
-                title: {
-                  type: "string"
-                },
-
-                summary: {
-                  type: "string"
-                },
-
-                urgency: {
-                  type: "string",
-                  enum: [
-                    "emergency",
-                    "urgent",
-                    "routine",
-                    "self_care"
-                  ]
-                },
-
-                emergencyMessage: {
-                  type: "string"
-                },
-
-                steps: {
-                  type: "array",
-                  items: {
-                    type: "object",
-
-                    properties: {
-                      icon: {
-                        type: "string"
-                      },
-
-                      title: {
-                        type: "string"
-                      },
-
-                      description: {
-                        type: "string"
-                      }
+                  properties: {
+                    language: {
+                      type: "string",
                     },
 
-                    required: [
-                      "icon",
-                      "title",
-                      "description"
-                    ]
-                  }
+                    title: {
+                      type: "string",
+                    },
+
+                    summary: {
+                      type: "string",
+                    },
+
+                    urgency: {
+                      type: "string",
+                      enum: [
+                        "emergency",
+                        "urgent",
+                        "routine",
+                        "self_care",
+                      ],
+                    },
+
+                    emergencyMessage: {
+                      type: "string",
+                    },
+
+                    steps: {
+                      type: "array",
+
+                      items: {
+                        type: "object",
+
+                        properties: {
+                          icon: {
+                            type: "string",
+                          },
+
+                          title: {
+                            type: "string",
+                          },
+
+                          description: {
+                            type: "string",
+                          },
+                        },
+
+                        required: [
+                          "icon",
+                          "title",
+                          "description",
+                        ],
+                      },
+                    },
+
+                    precautions: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+
+                    redFlags: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+
+                    whenToSeekCare: {
+                      type: "string",
+                    },
+
+                    followUpQuestions: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                      },
+                    },
+
+                    disclaimer: {
+                      type: "string",
+                    },
+                  },
+
+                  required: [
+                    "language",
+                    "title",
+                    "summary",
+                    "urgency",
+                    "emergencyMessage",
+                    "steps",
+                    "precautions",
+                    "redFlags",
+                    "whenToSeekCare",
+                    "followUpQuestions",
+                    "disclaimer",
+                  ],
                 },
-
-                precautions: {
-                  type: "array",
-
-                  items: {
-                    type: "string"
-                  }
-                },
-
-                redFlags: {
-                  type: "array",
-
-                  items: {
-                    type: "string"
-                  }
-                },
-
-                whenToSeekCare: {
-                  type: "string"
-                },
-
-                followUpQuestions: {
-                  type: "array",
-
-                  items: {
-                    type: "string"
-                  }
-                },
-
-                disclaimer: {
-                  type: "string"
-                }
               },
-
-              required: [
-                "language",
-                "title",
-                "summary",
-                "urgency",
-                "emergencyMessage",
-                "steps",
-                "precautions",
-                "redFlags",
-                "whenToSeekCare",
-                "followUpQuestions",
-                "disclaimer"
-              ]
-            }
-          }
-        })
+            },
+          },
+        }),
       }
     );
 
@@ -265,7 +252,7 @@ Return ONLY valid JSON matching the requested schema.
       return res.status(response.status).json({
         error:
           result?.error?.message ||
-          "Gemini API request failed."
+          "Gemini API request failed.",
       });
     }
 
@@ -276,9 +263,13 @@ Return ONLY valid JSON matching the requested schema.
         .trim();
 
     if (!rawText) {
+      console.error(
+        "Empty Gemini response:",
+        JSON.stringify(result)
+      );
+
       return res.status(502).json({
-        error:
-          "The AI returned an empty response."
+        error: "The AI returned an empty response.",
       });
     }
 
@@ -293,8 +284,7 @@ Return ONLY valid JSON matching the requested schema.
       );
 
       return res.status(502).json({
-        error:
-          "The AI returned an invalid response."
+        error: "The AI returned an invalid response.",
       });
     }
 
@@ -308,7 +298,7 @@ Return ONLY valid JSON matching the requested schema.
 
     return res.status(500).json({
       error:
-        "Unable to connect to the AI service."
+        "Unable to connect to the AI service.",
     });
   }
 }
