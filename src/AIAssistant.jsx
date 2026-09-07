@@ -19,7 +19,8 @@ const translations = {
     warningSigns: "Warning signs",
     seekCare: "When to seek medical care",
     questions: "Important questions",
-    disclaimer: "Health information only — not a medical diagnosis.",
+    disclaimer:
+      "Health information only — not a medical diagnosis.",
     emergencyHelp:
       "This may require urgent medical attention. Please contact emergency medical services or go to the nearest emergency department.",
     thinking: "CareLink is thinking...",
@@ -120,18 +121,21 @@ const suggestedQuestions = {
     "How can I prevent dehydration?",
     "What should I do after an insect bite?"
   ],
+
   te: [
     "జ్వరం వచ్చినప్పుడు ఏమి చేయాలి?",
     "ఛాతి నొప్పిలో ప్రమాద సూచనలు ఏమిటి?",
     "డీహైడ్రేషన్‌ను ఎలా నివారించాలి?",
     "కీటకం కరిస్తే ఏమి చేయాలి?"
   ],
+
   hi: [
     "बुखार होने पर क्या करना चाहिए?",
     "सीने में दर्द के चेतावनी संकेत क्या हैं?",
     "डिहाइड्रेशन से कैसे बचें?",
     "कीड़े के काटने पर क्या करना चाहिए?"
   ],
+
   mr: [
     "ताप आल्यावर काय करावे?",
     "छातीत दुखण्याची धोक्याची चिन्हे कोणती?",
@@ -184,7 +188,9 @@ function Section({ icon, title, children }) {
 }
 
 function BulletList({ items }) {
-  if (!items || items.length === 0) return null;
+  if (!items || items.length === 0) {
+    return null;
+  }
 
   return (
     <ul className="cl-list">
@@ -196,49 +202,69 @@ function BulletList({ items }) {
 }
 
 function AIResponse({ data, t }) {
-  const urgency = getUrgencyInfo(data.urgency, t);
+  const urgency = getUrgencyInfo(data?.urgency, t);
 
   return (
     <div className="cl-response">
 
       <div className="cl-response-header">
-        <div>
+
+        <div className="cl-response-main">
+
           <div className="cl-response-title">
-            {data.title || "CareLink"}
+            {data?.title || "CareLink AI"}
           </div>
 
           <div className="cl-summary">
-            {data.summary}
+            {data?.summary || ""}
           </div>
+
         </div>
 
-        <div className={`cl-urgency ${data.urgency}`}>
+        <div
+          className={`cl-urgency ${
+            data?.urgency || "routine"
+          }`}
+        >
           {urgency.icon} {urgency.label}
         </div>
+
       </div>
 
-      {data.urgency === "emergency" && (
+      {data?.urgency === "emergency" && (
         <div className="cl-emergency">
+
           <div className="cl-emergency-title">
             🚨 {t.emergency}
           </div>
 
           <div>
-            {data.emergencyMessage || t.emergencyHelp}
+            {data?.emergencyMessage ||
+              t.emergencyHelp}
           </div>
+
         </div>
       )}
 
-      {data.steps?.length > 0 && (
-        <Section icon="💡" title={t.whatToDo}>
+      {data?.steps?.length > 0 && (
+        <Section
+          icon="💡"
+          title={t.whatToDo}
+        >
           <div className="cl-steps">
+
             {data.steps.map((step, index) => (
-              <div className="cl-step" key={index}>
+              <div
+                className="cl-step"
+                key={index}
+              >
+
                 <div className="cl-step-icon">
                   {step.icon || "➡️"}
                 </div>
 
-                <div>
+                <div className="cl-step-content">
+
                   <div className="cl-step-title">
                     {step.title}
                   </div>
@@ -246,46 +272,85 @@ function AIResponse({ data, t }) {
                   <div className="cl-step-description">
                     {step.description}
                   </div>
+
                 </div>
+
               </div>
             ))}
+
           </div>
         </Section>
       )}
 
-      {data.precautions?.length > 0 && (
-        <Section icon="🛡️" title={t.precautions}>
-          <BulletList items={data.precautions} />
+      {data?.precautions?.length > 0 && (
+        <Section
+          icon="🛡️"
+          title={t.precautions}
+        >
+          <BulletList
+            items={data.precautions}
+          />
         </Section>
       )}
 
-      {data.redFlags?.length > 0 && (
-        <Section icon="🔴" title={t.warningSigns}>
-          <BulletList items={data.redFlags} />
+      {data?.redFlags?.length > 0 && (
+        <Section
+          icon="🔴"
+          title={t.warningSigns}
+        >
+          <BulletList
+            items={data.redFlags}
+          />
         </Section>
       )}
 
-      {data.whenToSeekCare && (
-        <Section icon="🏥" title={t.seekCare}>
+      {data?.whenToSeekCare && (
+        <Section
+          icon="🏥"
+          title={t.seekCare}
+        >
           <p>{data.whenToSeekCare}</p>
         </Section>
       )}
 
-      {data.followUpQuestions?.length > 0 && (
-        <Section icon="❓" title={t.questions}>
-          <BulletList items={data.followUpQuestions} />
+      {data?.followUpQuestions?.length > 0 && (
+        <Section
+          icon="❓"
+          title={t.questions}
+        >
+          <BulletList
+            items={data.followUpQuestions}
+          />
         </Section>
       )}
 
       <div className="cl-disclaimer">
-        ℹ️ {data.disclaimer || t.disclaimer}
+        ℹ️{" "}
+        {data?.disclaimer ||
+          t.disclaimer}
       </div>
+
     </div>
   );
 }
 
-export default function AIAssistant({ onBack, lang = "en" }) {
-  const t = translations[lang] || translations.en;
+/*
+ * IMPORTANT:
+ * This is a NAMED export because your existing
+ * App.jsx and CitizenHome.jsx use:
+ *
+ * import { AIAssistant } from "./AIAssistant";
+ *
+ * We also export it as default at the bottom
+ * for compatibility with other files.
+ */
+export function AIAssistant({
+  onBack,
+  lang = "en"
+}) {
+  const t =
+    translations[lang] ||
+    translations.en;
 
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState([]);
@@ -293,22 +358,37 @@ export default function AIAssistant({ onBack, lang = "en" }) {
   const [listening, setListening] = useState(false);
 
   const sendMessage = async (text = query) => {
-    const cleanText = text.trim();
+    const cleanText =
+      String(text || "").trim();
 
-    if (!cleanText || loading) return;
+    if (!cleanText || loading) {
+      return;
+    }
 
     const userMessage = {
       role: "user",
       text: cleanText
     };
 
-    const previousMessages = messages.map((message) => ({
-      role: message.role === "assistant" ? "model" : "user",
-      text:
-        typeof message.text === "string"
-          ? message.text
-          : message.data?.summary || ""
-    }));
+    const previousMessages =
+      messages
+        .map((message) => {
+          if (message.role === "assistant") {
+            return {
+              role: "model",
+              text:
+                message.data?.summary ||
+                message.text ||
+                ""
+            };
+          }
+
+          return {
+            role: "user",
+            text: message.text || ""
+          };
+        })
+        .filter((message) => message.text);
 
     setMessages((prev) => [
       ...prev,
@@ -319,22 +399,39 @@ export default function AIAssistant({ onBack, lang = "en" }) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: cleanText,
-          language: lang,
-          history: previousMessages
-        })
-      });
+      const response = await fetch(
+        "/api/chat",
+        {
+          method: "POST",
 
-      const data = await response.json();
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            message: cleanText,
+            language: lang,
+            history: previousMessages
+          })
+        }
+      );
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "Invalid server response."
+        );
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || "Request failed");
+        throw new Error(
+          data?.error ||
+            "The AI request failed."
+        );
       }
 
       setMessages((prev) => [
@@ -344,8 +441,13 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           data
         }
       ]);
+
     } catch (error) {
-      console.error(error);
+
+      console.error(
+        "CareLink AI error:",
+        error
+      );
 
       setMessages((prev) => [
         ...prev,
@@ -355,6 +457,7 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           error: true
         }
       ]);
+
     } finally {
       setLoading(false);
     }
@@ -372,7 +475,8 @@ export default function AIAssistant({ onBack, lang = "en" }) {
       return;
     }
 
-    const recognition = new SpeechRecognition();
+    const recognition =
+      new SpeechRecognition();
 
     const languageMap = {
       en: "en-IN",
@@ -382,16 +486,21 @@ export default function AIAssistant({ onBack, lang = "en" }) {
     };
 
     recognition.lang =
-      languageMap[lang] || "en-IN";
+      languageMap[lang] ||
+      "en-IN";
 
     recognition.interimResults = false;
     recognition.continuous = false;
 
     setListening(true);
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (
+      event
+    ) => {
       const transcript =
-        event.results[0][0].transcript;
+        event
+          .results?.[0]?.[0]
+          ?.transcript || "";
 
       setQuery(transcript);
     };
@@ -404,11 +513,23 @@ export default function AIAssistant({ onBack, lang = "en" }) {
       setListening(false);
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error(
+        "Speech recognition error:",
+        error
+      );
+
+      setListening(false);
+    }
   };
 
   const handleKeyDown = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
       event.preventDefault();
       sendMessage();
     }
@@ -418,6 +539,7 @@ export default function AIAssistant({ onBack, lang = "en" }) {
     <div className="carelink-ai">
 
       <style>{`
+
         .carelink-ai {
           min-height: 100%;
           width: 100%;
@@ -443,7 +565,8 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           width: 100%;
           max-width: 900px;
           margin: auto;
-          min-height: calc(100vh - 36px);
+          min-height:
+            calc(100vh - 36px);
           display: flex;
           flex-direction: column;
         }
@@ -452,12 +575,14 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 8px 0 18px;
+          padding:
+            8px 0 18px;
         }
 
         .cl-back {
           border: 0;
-          background: rgba(255,255,255,0.08);
+          background:
+            rgba(255,255,255,0.08);
           color: white;
           width: 44px;
           height: 44px;
@@ -466,17 +591,23 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           cursor: pointer;
         }
 
+        .cl-back:hover {
+          background:
+            rgba(255,255,255,0.14);
+        }
+
         .cl-brand-icon {
           width: 45px;
           height: 45px;
           border-radius: 15px;
           display: grid;
           place-items: center;
-          background: linear-gradient(
-            135deg,
-            #16a34a,
-            #0891b2
-          );
+          background:
+            linear-gradient(
+              135deg,
+              #16a34a,
+              #0891b2
+            );
           font-size: 23px;
         }
 
@@ -510,11 +641,13 @@ export default function AIAssistant({ onBack, lang = "en" }) {
         .cl-chat {
           flex: 1;
           overflow-y: auto;
-          padding: 10px 0 20px;
+          padding:
+            10px 0 20px;
         }
 
         .cl-welcome {
-          padding: 25px 5px;
+          padding:
+            25px 5px;
           text-align: center;
         }
 
@@ -539,15 +672,22 @@ export default function AIAssistant({ onBack, lang = "en" }) {
         .cl-suggestions {
           display: grid;
           grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+            repeat(
+              2,
+              minmax(0, 1fr)
+            );
           gap: 10px;
           max-width: 700px;
-          margin: 25px auto;
+          margin:
+            25px auto;
         }
 
         .cl-suggestion {
-          border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.045);
+          border:
+            1px solid
+            rgba(255,255,255,0.1);
+          background:
+            rgba(255,255,255,0.045);
           color: #dcecff;
           border-radius: 15px;
           padding: 14px;
@@ -557,8 +697,10 @@ export default function AIAssistant({ onBack, lang = "en" }) {
         }
 
         .cl-suggestion:hover {
-          background: rgba(255,255,255,0.09);
-          transform: translateY(-1px);
+          background:
+            rgba(255,255,255,0.09);
+          transform:
+            translateY(-1px);
         }
 
         .cl-message {
@@ -573,16 +715,21 @@ export default function AIAssistant({ onBack, lang = "en" }) {
         .cl-user-bubble {
           max-width: 80%;
           background: #155e75;
-          padding: 13px 16px;
-          border-radius: 18px 18px 4px 18px;
+          padding:
+            13px 16px;
+          border-radius:
+            18px 18px 4px 18px;
           line-height: 1.5;
           white-space: pre-wrap;
         }
 
         .cl-response {
           max-width: 850px;
-          background: rgba(255,255,255,0.045);
-          border: 1px solid rgba(255,255,255,0.08);
+          background:
+            rgba(255,255,255,0.045);
+          border:
+            1px solid
+            rgba(255,255,255,0.08);
           border-radius: 22px;
           padding: 18px;
           margin-right: 10px;
@@ -593,6 +740,10 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           justify-content: space-between;
           gap: 15px;
           align-items: flex-start;
+        }
+
+        .cl-response-main {
+          min-width: 0;
         }
 
         .cl-response-title {
@@ -608,34 +759,48 @@ export default function AIAssistant({ onBack, lang = "en" }) {
 
         .cl-urgency {
           flex-shrink: 0;
-          padding: 8px 11px;
+          padding:
+            8px 11px;
           border-radius: 999px;
           font-size: 12px;
           font-weight: 700;
-          background: rgba(255,255,255,0.08);
+          background:
+            rgba(255,255,255,0.08);
         }
 
         .cl-urgency.emergency {
-          background: rgba(239,68,68,0.18);
+          background:
+            rgba(239,68,68,0.18);
           color: #fecaca;
         }
 
         .cl-urgency.urgent {
-          background: rgba(245,158,11,0.18);
+          background:
+            rgba(245,158,11,0.18);
           color: #fde68a;
         }
 
         .cl-urgency.self_care {
-          background: rgba(34,197,94,0.15);
+          background:
+            rgba(34,197,94,0.15);
           color: #bbf7d0;
+        }
+
+        .cl-urgency.routine {
+          background:
+            rgba(59,130,246,0.15);
+          color: #bfdbfe;
         }
 
         .cl-emergency {
           margin-top: 16px;
           padding: 15px;
           border-radius: 16px;
-          background: rgba(220,38,38,0.13);
-          border: 1px solid rgba(248,113,113,0.25);
+          background:
+            rgba(220,38,38,0.13);
+          border:
+            1px solid
+            rgba(248,113,113,0.25);
           color: #fecaca;
           line-height: 1.55;
         }
@@ -648,7 +813,9 @@ export default function AIAssistant({ onBack, lang = "en" }) {
         .cl-section {
           margin-top: 18px;
           padding-top: 17px;
-          border-top: 1px solid rgba(255,255,255,0.07);
+          border-top:
+            1px solid
+            rgba(255,255,255,0.07);
         }
 
         .cl-section-title {
@@ -664,6 +831,10 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           line-height: 1.6;
         }
 
+        .cl-section-content p {
+          margin: 0;
+        }
+
         .cl-steps {
           display: grid;
           gap: 10px;
@@ -674,17 +845,23 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           gap: 12px;
           padding: 12px;
           border-radius: 14px;
-          background: rgba(255,255,255,0.035);
+          background:
+            rgba(255,255,255,0.035);
         }
 
         .cl-step-icon {
           width: 35px;
           height: 35px;
           border-radius: 10px;
-          background: rgba(255,255,255,0.07);
+          background:
+            rgba(255,255,255,0.07);
           display: grid;
           place-items: center;
           flex-shrink: 0;
+        }
+
+        .cl-step-content {
+          min-width: 0;
         }
 
         .cl-step-title {
@@ -711,7 +888,8 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           margin-top: 18px;
           padding: 11px;
           border-radius: 12px;
-          background: rgba(255,255,255,0.035);
+          background:
+            rgba(255,255,255,0.035);
           color: #8196a8;
           font-size: 12px;
           line-height: 1.5;
@@ -729,9 +907,13 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           width: 18px;
           height: 18px;
           border-radius: 50%;
-          border: 2px solid rgba(255,255,255,0.15);
+          border:
+            2px solid
+            rgba(255,255,255,0.15);
           border-top-color: #38bdf8;
-          animation: cl-spin 0.8s linear infinite;
+          animation:
+            cl-spin
+            0.8s linear infinite;
         }
 
         @keyframes cl-spin {
@@ -744,10 +926,11 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           position: sticky;
           bottom: 0;
           padding-top: 10px;
-          background: linear-gradient(
-            transparent,
-            #061018 25%
-          );
+          background:
+            linear-gradient(
+              transparent,
+              #061018 25%
+            );
         }
 
         .cl-input-box {
@@ -756,9 +939,13 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           gap: 8px;
           padding: 9px;
           background: #0c1b27;
-          border: 1px solid rgba(255,255,255,0.1);
+          border:
+            1px solid
+            rgba(255,255,255,0.1);
           border-radius: 19px;
-          box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+          box-shadow:
+            0 12px 40px
+            rgba(0,0,0,0.3);
         }
 
         .cl-textarea {
@@ -770,7 +957,8 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           outline: 0;
           background: transparent;
           color: white;
-          padding: 11px 8px;
+          padding:
+            11px 8px;
           font-size: 15px;
           font-family: inherit;
         }
@@ -790,12 +978,19 @@ export default function AIAssistant({ onBack, lang = "en" }) {
         }
 
         .cl-voice {
-          background: rgba(255,255,255,0.07);
+          background:
+            rgba(255,255,255,0.07);
           color: white;
         }
 
+        .cl-voice:hover {
+          background:
+            rgba(255,255,255,0.12);
+        }
+
         .cl-voice.active {
-          background: rgba(239,68,68,0.2);
+          background:
+            rgba(239,68,68,0.2);
         }
 
         .cl-send {
@@ -803,7 +998,12 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           color: white;
         }
 
-        .cl-send:disabled {
+        .cl-send:hover {
+          background: #0e7490;
+        }
+
+        .cl-send:disabled,
+        .cl-voice:disabled {
           opacity: 0.4;
           cursor: not-allowed;
         }
@@ -811,17 +1011,20 @@ export default function AIAssistant({ onBack, lang = "en" }) {
         .cl-error {
           padding: 13px;
           border-radius: 14px;
-          background: rgba(239,68,68,0.1);
+          background:
+            rgba(239,68,68,0.1);
           color: #fecaca;
         }
 
         @media (max-width: 650px) {
+
           .carelink-ai {
             padding: 10px;
           }
 
           .cl-container {
-            min-height: calc(100vh - 20px);
+            min-height:
+              calc(100vh - 20px);
           }
 
           .cl-suggestions {
@@ -847,7 +1050,13 @@ export default function AIAssistant({ onBack, lang = "en" }) {
           .cl-brand-subtitle {
             display: none;
           }
+
+          .cl-response-title {
+            font-size: 18px;
+          }
+
         }
+
       `}</style>
 
       <div className="cl-container">
@@ -902,8 +1111,10 @@ export default function AIAssistant({ onBack, lang = "en" }) {
 
               <div className="cl-suggestions">
 
-                {(suggestedQuestions[lang] ||
-                  suggestedQuestions.en).map(
+                {(
+                  suggestedQuestions[lang] ||
+                  suggestedQuestions.en
+                ).map(
                   (question, index) => (
                     <button
                       key={index}
@@ -922,36 +1133,47 @@ export default function AIAssistant({ onBack, lang = "en" }) {
             </div>
           )}
 
-          {messages.map((message, index) => (
-            <div
-              className="cl-message"
-              key={index}
-            >
+          {messages.map(
+            (message, index) => (
+              <div
+                className="cl-message"
+                key={index}
+              >
 
-              {message.role === "user" ? (
-                <div className="cl-user-message">
-                  <div className="cl-user-bubble">
-                    {message.text}
+                {message.role === "user" ? (
+
+                  <div className="cl-user-message">
+                    <div className="cl-user-bubble">
+                      {message.text}
+                    </div>
                   </div>
-                </div>
-              ) : message.error ? (
-                <div className="cl-error">
-                  ⚠️ {message.text}
-                </div>
-              ) : (
-                <AIResponse
-                  data={message.data}
-                  t={t}
-                />
-              )}
 
-            </div>
-          ))}
+                ) : message.error ? (
+
+                  <div className="cl-error">
+                    ⚠️ {message.text}
+                  </div>
+
+                ) : (
+
+                  <AIResponse
+                    data={message.data}
+                    t={t}
+                  />
+
+                )}
+
+              </div>
+            )
+          )}
 
           {loading && (
             <div className="cl-loading">
+
               <div className="cl-spinner" />
+
               {t.thinking}
+
             </div>
           )}
 
@@ -975,9 +1197,13 @@ export default function AIAssistant({ onBack, lang = "en" }) {
 
             <button
               className={`cl-voice ${
-                listening ? "active" : ""
+                listening
+                  ? "active"
+                  : ""
               }`}
-              onClick={startVoiceInput}
+              onClick={
+                startVoiceInput
+              }
               disabled={loading}
               title={
                 listening
@@ -985,14 +1211,19 @@ export default function AIAssistant({ onBack, lang = "en" }) {
                   : t.voice
               }
             >
-              {listening ? "🔴" : "🎙️"}
+              {listening
+                ? "🔴"
+                : "🎙️"}
             </button>
 
             <button
               className="cl-send"
-              onClick={() => sendMessage()}
+              onClick={() =>
+                sendMessage()
+              }
               disabled={
-                loading || !query.trim()
+                loading ||
+                !query.trim()
               }
               title={t.send}
             >
@@ -1004,6 +1235,12 @@ export default function AIAssistant({ onBack, lang = "en" }) {
         </div>
 
       </div>
+
     </div>
   );
 }
+
+/*
+ * Default export for compatibility.
+ */
+export default AIAssistant;
