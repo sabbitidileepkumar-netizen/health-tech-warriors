@@ -16,6 +16,24 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// Multiple mirrors — if one is down/rate-limited, we try the next
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://lz4.overpass-api.de/api/interpreter"
+];
+
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 export function HospitalFinder({ onBack, lang = "en" }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [hospitals, setHospitals] = useState([]);
@@ -59,35 +77,63 @@ export function HospitalFinder({ onBack, lang = "en" }) {
       out center;
     `;
 
-    try {
-      const response = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        body: query
-      });
-      const data = await response.json();
+    let lastErrorDetail = "";
 
-      const results = data.elements
-        .map((el) => {
-          const elLat = el.lat || (el.center && el.center.lat);
-          const elLon = el.lon || (el.center && el.center.lon);
-          if (!elLat || !elLon) return null;
-          return {
-            id: el.id,
-            name: (el.tags && el.tags.name) || "Unnamed Health Facility",
-            type: el.tags && el.tags.amenity === "clinic" ? "Clinic" : "Hospital",
-            address: (el.tags && (el.tags["addr:full"] || el.tags["addr:street"])) || "Address not listed",
-            phone: (el.tags && (el.tags.phone || el.tags["contact:phone"])) || null,
-            distanceKm: getDistanceKm(lat, lon, elLat, elLon)
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.distanceKm - b.distanceKm)
-        .slice(0, 20);
+    for (const endpoint of OVERPASS_ENDPOINTS) {
+      try {
+        const response = await fetchWithTimeout(
+          endpoint,
+          {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: query
+          },
+          12000 // 12s timeout per mirror
+        );
 
-      setHospitals(results);
-    } catch (err) {
-      setError("Could not load nearby hospitals. Check your internet connection.");
+        if (!response.ok) {
+          lastErrorDetail = `${endpoint} responded with status ${response.status}`;
+          continue; // try next mirror
+        }
+
+        const data = await response.json();
+
+        if (!data || !Array.isArray(data.elements)) {
+          lastErrorDetail = `${endpoint} returned unexpected data shape`;
+          continue;
+        }
+
+        const results = data.elements
+          .map((el) => {
+            const elLat = el.lat || (el.center && el.center.lat);
+            const elLon = el.lon || (el.center && el.center.lon);
+            if (!elLat || !elLon) return null;
+            return {
+              id: el.id,
+              name: (el.tags && el.tags.name) || "Unnamed Health Facility",
+              type: el.tags && el.tags.amenity === "clinic" ? "Clinic" : "Hospital",
+              address: (el.tags && (el.tags["addr:full"] || el.tags["addr:street"])) || "Address not listed",
+              phone: (el.tags && (el.tags.phone || el.tags["contact:phone"])) || null,
+              distanceKm: getDistanceKm(lat, lon, elLat, elLon)
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => a.distanceKm - b.distanceKm)
+          .slice(0, 20);
+
+        setHospitals(results);
+        setLoading(false);
+        return; // success — stop trying other mirrors
+      } catch (err) {
+        lastErrorDetail = err && err.name === "AbortError" ? `${endpoint} timed out` : `${endpoint} failed: ${err.message}`;
+        console.error("HospitalFinder fetch error:", lastErrorDetail);
+        // try next mirror
+      }
     }
+
+    // All mirrors failed
+    console.error("All Overpass mirrors failed. Last error:", lastErrorDetail);
+    setError("Could not load nearby hospitals right now. The map data service may be busy — please try again in a moment.");
     setLoading(false);
   };
 
