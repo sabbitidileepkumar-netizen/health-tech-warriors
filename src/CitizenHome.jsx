@@ -1,4 +1,15 @@
 import React, { useState } from "react";
+import {
+  Droplet,
+  Baby,
+  Bot,
+  Hospital,
+  CloudRain,
+  Pill,
+  HeartHandshake,
+  HeartPulse,
+  Siren
+} from "lucide-react";
 import { EmergencyModal } from "./EmergencyModal";
 import { BloodSearch } from "./BloodSearch";
 import { MedicineReminders } from "./MedicineReminders";
@@ -45,14 +56,14 @@ export function CitizenHome({ lang = "en", t }) {
 
   const citizenItems = [
     { key: "snake", icon: "🐍", bg: "#FEE2E2", color: "#DC2626", title: t.snakebiteEmergency || "Snakebite SOS", desc: t.snakebiteEmergencyDesc || "First aid & Anti-Venom" },
-    { key: "blood", icon: "🩸", bg: "#FEE2E2", color: "#DC2626", title: t.bloodBank, desc: t.bloodBankDesc },
-    { key: "polio", icon: "👶", bg: "#FEF3C7", color: "#D97706", title: t.childImmunization || "Child Polio Drops", desc: t.childImmunizationDesc || "Vaccination calendar" },
-    { key: "ai", icon: "🤖", bg: "#F3E8FF", color: "#7E22CE", title: t.aiAssistant || "AI Health Copilot", desc: t.aiAssistantDesc || "Voice medical advisor" },
-    { key: "hospitals", icon: "🏥", bg: "#EBF3FC", color: "#0F6CBD", title: t.findHospital, desc: t.findHospitalDesc },
-    { key: "weather", icon: "🌦️", bg: "#E0F2FE", color: "#0284C7", title: t.weatherAlerts || "Weather Alerts", desc: t.weatherAlertsDesc || "Flood & outbreak alerts" },
-    { key: "medicines", icon: "💊", bg: "#E6F7F5", color: "#0D9488", title: t.medicines, desc: t.medicinesDesc },
-    { key: "pregnancy", icon: "🤰", bg: "#FFF7ED", color: "#F97316", title: t.pregnancyCare, desc: t.pregnancyCareDesc },
-    { key: "organ", icon: "🫀", bg: "#F3E8FF", color: "#7E22CE", title: t.organDonation, desc: t.organDonationDesc }
+    { key: "blood", icon: Droplet, bg: "#FEE2E2", color: "#DC2626", title: t.bloodBank, desc: t.bloodBankDesc },
+    { key: "polio", icon: Baby, bg: "#FEF3C7", color: "#D97706", title: t.childImmunization || "Child Polio Drops", desc: t.childImmunizationDesc || "Vaccination calendar" },
+    { key: "ai", icon: Bot, bg: "#F3E8FF", color: "#7E22CE", title: t.aiAssistant || "AI Health Copilot", desc: t.aiAssistantDesc || "Voice medical advisor" },
+    { key: "hospitals", icon: Hospital, bg: "#EBF3FC", color: "#0F6CBD", title: t.findHospital, desc: t.findHospitalDesc },
+    { key: "weather", icon: CloudRain, bg: "#E0F2FE", color: "#0284C7", title: t.weatherAlerts || "Weather Alerts", desc: t.weatherAlertsDesc || "Flood & outbreak alerts" },
+    { key: "medicines", icon: Pill, bg: "#E6F7F5", color: "#0D9488", title: t.medicines, desc: t.medicinesDesc },
+    { key: "pregnancy", icon: HeartHandshake, bg: "#FFF7ED", color: "#F97316", title: t.pregnancyCare, desc: t.pregnancyCareDesc },
+    { key: "organ", icon: HeartPulse, bg: "#F3E8FF", color: "#7E22CE", title: t.organDonation, desc: t.organDonationDesc }
   ];
 
   const filteredItems = citizenItems.filter((item) =>
@@ -84,7 +95,7 @@ export function CitizenHome({ lang = "en", t }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "32px" }}>🚨</span>
+          <Siren size={32} color="#DC2626" />
           <div>
             <strong style={{ color: "#DC2626", fontSize: "15px" }}>{t.emergency}</strong>
             <p style={{ margin: 0, fontSize: "12px", color: "#991B1B" }}>{t.emergencyDesc}</p>
@@ -99,15 +110,18 @@ export function CitizenHome({ lang = "en", t }) {
         </p>
       ) : (
         <div className="icon-card-grid">
-          {filteredItems.map((item) => (
-            <div className="icon-card" key={item.key} onClick={() => setActiveScreen(item.key)}>
-              <div className="icon-card-bubble" style={{ background: item.bg, color: item.color }}>
-                {item.icon}
+          {filteredItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div className="icon-card" key={item.key} onClick={() => setActiveScreen(item.key)}>
+                <div className="icon-card-bubble" style={{ background: item.bg, color: item.color }}>
+                  {typeof Icon === "string" ? Icon : <Icon size={28} color={item.color} />}
+                </div>
+                <div className="icon-card-title">{item.title}</div>
+                <div className="icon-card-desc">{item.desc}</div>
               </div>
-              <div className="icon-card-title">{item.title}</div>
-              <div className="icon-card-desc">{item.desc}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
