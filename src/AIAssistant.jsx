@@ -1,27 +1,12 @@
 import React, { useState } from "react";
 
-const KNOWLEDGE_BASE = {
-  snakebite: {
-    en: "🚨 Immediate Snakebite Protocol: 1. Keep the patient completely calm. 2. Immobilize the bitten limb using a splint or cloth (do not let them walk). 3. Remove rings/bangles before swelling starts. 4. NEVER cut the wound, suck venom, or apply tight tourniquets. 5. Call 108 or rush directly to Tanuku Government Area Hospital (AH Tanuku) or Bhimavaram CHC where 42 ASV vials are stocked.",
-    te: "🚨 పాము కాటు తక్షణ అత్యవసర చర్యలు: 1. బాధితుడిని కదలకుండా ప్రశాంతంగా ఉంచండి. 2. కాటు వేసిన భాగాన్ని కట్టెతో కదలకుండా కట్టండి. 3. ఉంగరాలు, గాజులు వెంటనే తీయండి. 4. గాయాన్ని కోయవద్దు లేదా రక్తం పీల్చవద్దు. 5. వెంటనే 108 కు కాల్ చేసి 42 ASV వయల్స్ ఉన్న తణుకు ఏరియా ఆసుపత్రికి లేదా భీమవరం CHCకి తరలించండి."
-  },
-  polio: {
-    en: "👶 Child Polio & Vaccine Advice: Oral Polio Drops (OPV) and Pentavalent vaccines can safely be caught up even if delayed. Visit the nearest Anganwadi centre in Relangi, Tanuku, or Attili on regular immunization days (Wednesday). Always participate in the upcoming Pulse Polio Special Campaign 2026.",
-    te: "👶 పోలియో & టీకా సలహా: పోలియో చుక్కలు మరియు ఇతర టీకాలు ఆలస్యమైనప్పటికీ సురక్షితంగా వేయించవచ్చు. ప్రతి బుధవారం రిలంగి, తణుకు లేదా అత్తిలి అంగన్‌వాడీ కేంద్రాలలో టీకాలు వేస్తారు. రాబోయే 2026 పల్స్ పోలియో కార్యక్రమంలో 5 ఏళ్లలోపు పిల్లలందరికీ తప్పకుండా చుక్కల మందు వేయించండి."
-  },
-  ors: {
-    en: "💧 Home ORS Preparation: In 1 litre of clean boiled and cooled drinking water, mix 6 level teaspoons of sugar and half a teaspoon of salt (or 1 full WHO ORS sachet). Give small sips every 10-15 minutes after every loose stool to prevent dehydration shock.",
-    te: "💧 ఇంట్లోనే ORS తయారీ: 1 లీటరు కాచి చల్లార్చిన తాగునీటిలో 6 చెంచాల చక్కెర మరియు అర చెంచా ఉప్పు కలపండి (లేదా ఒక పూర్తి WHO ORS ప్యాకెట్). విరేచనం అయిన ప్రతిసారీ కొద్దికొద్దిగా తాగిస్తూ డీహైడ్రేషన్ రాకుండా కాపాడండి."
-  },
-  chestpain: {
-    en: "💔 Chest Pain & Heart Alert: Severe chest pressure radiating to the left arm or jaw with sweating is a medical emergency. Do not give food or water. Call 108 immediately and transfer to Tanuku Government Area Hospital or Bhimavaram CHC equipped with ECG and emergency oxygen.",
-    te: "💔 ఛాతీ నొప్పి & గుండె అత్యవసరం: ఛాతీలో తీవ్రమైన నొప్పి, ఎడమ చేయి లేదా దవడకు వ్యాపించడం, చెమటలు పట్టడం గుండెపోటు లక్షణాలు కావచ్చు. రోగికి నీరు లేదా ఆహారం ఇవ్వవద్దు. వెంటనే 108 కు ఫోన్ చేసి తణుకు లేదా భీమవరం ఆసుపత్రికి తరలించండి."
-  }
-};
+// PASTE YOUR GEMINI API KEY BELOW (between the quotes)
+const GEMINI_API_KEY = "PASTE_YOUR_KEY_HERE";
 
 export function AIAssistant({ onBack, lang = "en" }) {
   const [query, setQuery] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [chatLog, setChatLog] = useState([
     {
       sender: "ai",
@@ -30,7 +15,6 @@ export function AIAssistant({ onBack, lang = "en" }) {
         : "Namaste! I am your CareLink AI Rural Health Copilot. Ask me about snakebite first-aid, child vaccines, ORS, or hospital care in Tanuku/Relangi."
     }
   ]);
-  // speech state
 
   const samplePrompts = [
     { key: "snakebite", label: lang === "te" ? "🐍 పాము కాటు వేస్తే ఏం చేయాలి?" : "🐍 Snakebite first aid protocol" },
@@ -39,35 +23,57 @@ export function AIAssistant({ onBack, lang = "en" }) {
     { key: "chestpain", label: lang === "te" ? "💔 తీవ్రమైన ఛాతీ నొప్పి వస్తే?" : "💔 Chest pain emergency action" }
   ];
 
-  const handleSend = (textToSend) => {
+  const handleSend = async (textToSend) => {
     const q = textToSend || query;
-    if (!q.trim()) return;
+    if (!q.trim() || isLoading) return;
 
     const userMessage = { sender: "user", text: q };
     setChatLog((prev) => [...prev, userMessage]);
     setQuery("");
+    setIsLoading(true);
 
-    // Identify intent
-    setTimeout(() => {
-      const lower = q.toLowerCase();
-      let answer = "";
+    const systemContext = lang === "te"
+      ? "మీరు గ్రామీణ భారతదేశంలోని పశ్చిమ గోదావరి జిల్లాలో పనిచేసే ఆశా హెల్త్ వర్కర్ల కోసం ఒక సహాయక AI. తెలుగులో సూటిగా, స్పష్టంగా, స్వల్ప వాక్యాలలో సమాధానం ఇవ్వండి. ఇది వైద్య నిర్ధారణ కాదు, ప్రాథమిక సమాచారం మాత్రమే అని గుర్తుంచుకోండి. తీవ్రమైన పరిస్థితుల్లో 108కి కాల్ చేయమని చెప్పండి."
+      : "You are a helpful AI assistant for ASHA health workers in rural West Godavari, India. Answer clearly and concisely in plain language. This is general guidance only, not a medical diagnosis. For serious/emergency symptoms, always advise calling 108 or visiting the nearest hospital.";
 
-      if (lower.includes("snake") || lower.includes("పాము") || lower.includes("bite") || lower.includes("కాటు")) {
-        answer = KNOWLEDGE_BASE.snakebite[lang === "te" ? "te" : "en"];
-      } else if (lower.includes("polio") || lower.includes("పోలియో") || lower.includes("vaccin") || lower.includes("టీకా")) {
-        answer = KNOWLEDGE_BASE.polio[lang === "te" ? "te" : "en"];
-      } else if (lower.includes("ors") || lower.includes("డయేరియా") || lower.includes("diarrhea") || lower.includes("విరేచన")) {
-        answer = KNOWLEDGE_BASE.ors[lang === "te" ? "te" : "en"];
-      } else if (lower.includes("chest") || lower.includes("heart") || lower.includes("గుండె") || lower.includes("ఛాతీ")) {
-        answer = KNOWLEDGE_BASE.chestpain[lang === "te" ? "te" : "en"];
-      } else {
-        answer = lang === "te"
-          ? "ధన్యవాదాలు. మీ ప్రశ్నకు సమీప తణుకు ఏరియా ఆసుపత్రి లేదా అత్తిలి PHC డాక్టర్‌ను సంప్రదించాలని సూచిస్తున్నాము. అత్యవసరమైతే 108 కు కాల్ చేయండి."
-          : "Thank you. For specific clinical diagnosis, please visit Tanuku Area Hospital or Attili 24x7 PHC. For life-threatening trauma or distress, call 108 immediately.";
-      }
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: systemContext + "\n\nQuestion: " + q }]
+              }
+            ]
+          })
+        }
+      );
 
-      setChatLog((prev) => [...prev, { sender: "ai", text: answer }]);
-    }, 600);
+      const data = await response.json();
+      const aiText =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        (lang === "te"
+          ? "క్షమించండి, సమాధానం రాబట్టడంలో సమస్య వచ్చింది. దయచేసి మళ్ళీ ప్రయత్నించండి లేదా 108కి కాల్ చేయండి."
+          : "Sorry, I had trouble getting a response. Please try again or call 108 for emergencies.");
+
+      setChatLog((prev) => [...prev, { sender: "ai", text: aiText }]);
+    } catch (err) {
+      setChatLog((prev) => [
+        ...prev,
+        {
+          sender: "ai",
+          text: lang === "te"
+            ? "నెట్‌వర్క్ సమస్య వచ్చింది. దయచేసి కనెక్షన్ చెక్ చేసి మళ్ళీ ప్రయత్నించండి."
+            : "Network error. Please check your connection and try again."
+        }
+      ]);
+    }
+
+    setIsLoading(false);
   };
 
   const handleVoiceInput = () => {
@@ -85,9 +91,6 @@ export function AIAssistant({ onBack, lang = "en" }) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = lang === "te" ? "te-IN" : "en-IN";
-      // onstart
-      // onend
-      // onerror
       window.speechSynthesis.speak(utterance);
     } else {
       alert("Text-to-speech not supported on this browser.");
@@ -117,7 +120,6 @@ export function AIAssistant({ onBack, lang = "en" }) {
         </div>
       </div>
 
-      {/* Suggested Quick Prompts */}
       <div style={{ marginBottom: "14px" }}>
         <label style={{ fontSize: "12px", color: "#64748B", fontWeight: "bold" }}>
           {lang === "te" ? "త్వరిత ప్రశ్నలు:" : "Suggested Questions:"}
@@ -145,7 +147,6 @@ export function AIAssistant({ onBack, lang = "en" }) {
         </div>
       </div>
 
-      {/* Chat Messages */}
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px", maxHeight: "420px", overflowY: "auto" }}>
         {chatLog.map((msg, idx) => {
           const isAI = msg.sender === "ai";
@@ -189,9 +190,13 @@ export function AIAssistant({ onBack, lang = "en" }) {
             </div>
           );
         })}
+        {isLoading && (
+          <div style={{ alignSelf: "flex-start", fontSize: "13px", color: "#7E22CE", padding: "8px" }}>
+            🤖 Thinking...
+          </div>
+        )}
       </div>
 
-      {/* Input Bar */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
         <button
           onClick={handleVoiceInput}
@@ -215,6 +220,7 @@ export function AIAssistant({ onBack, lang = "en" }) {
           onClick={() => handleSend()}
           className="btn-primary"
           style={{ background: "#7E22CE", width: "auto", padding: "10px 16px" }}
+          disabled={isLoading}
         >
           ➤
         </button>
