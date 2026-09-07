@@ -15,6 +15,14 @@ function PatientRegistration({ onBack, t, lang = "en" }) {
   const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
   const bloodGroups = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
+  const getCategory = (ageValue) => {
+    const a = Number(ageValue);
+    if (!ageValue || isNaN(a)) return "Adult";
+    if (a <= 12) return "Child";
+    if (a <= 59) return "Adult";
+    return "Elderly";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -92,29 +100,44 @@ function PatientRegistration({ onBack, t, lang = "en" }) {
                 type="number"
                 placeholder="e.g. 35"
                 value={age}
-                onChange={(e) => setAge(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAge(val);
+                  setCategory(getCategory(val));
+                }}
                 required
               />
             </div>
             <div>
               <label>📋 {lang === "te" ? "కేటగిరీ" : "Category"}</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                <option value="Child">👶 Child</option>
-                <option value="Woman">👩 Woman</option>
-                <option value="Adult">🧑 Adult</option>
-                <option value="Elderly">👴 Elderly</option>
-              </select>
+              <input
+                type="text"
+                value={
+                  category === "Child" ? "👶 Child" :
+                  category === "Elderly" ? "👴 Elderly" :
+                  "🧑 Adult"
+                }
+                readOnly
+                style={{ background: "#F3F4F6", cursor: "not-allowed" }}
+              />
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
             <div>
               <label>🏡 {lang === "te" ? "గ్రామం" : "Village"}</label>
-              <select value={village} onChange={(e) => setVillage(e.target.value)}>
+              <input
+                type="text"
+                list="village-options"
+                placeholder="Type village name"
+                value={village}
+                onChange={(e) => setVillage(e.target.value)}
+              />
+              <datalist id="village-options">
                 {villages.map((v) => (
-                  <option key={v} value={v}>{v}</option>
+                  <option key={v} value={v} />
                 ))}
-              </select>
+              </datalist>
             </div>
             <div>
               <label>🩸 {lang === "te" ? "రక్త వర్గం" : "Blood Group"}</label>
