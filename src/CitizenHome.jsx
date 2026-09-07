@@ -15,6 +15,7 @@ export function CitizenHome({ lang = "en", t }) {
   const [showEmergency, setShowEmergency] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceQuery, setVoiceQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleVoiceSim = () => {
     setIsListening(true);
@@ -73,9 +74,24 @@ export function CitizenHome({ lang = "en", t }) {
     return <AIAssistant onBack={() => setActiveScreen("home")} lang={lang} />;
   }
 
+  const citizenItems = [
+    { key: "snake", icon: "🐍", bg: "#FEE2E2", color: "#DC2626", title: t.snakebiteEmergency || "Snakebite SOS", desc: t.snakebiteEmergencyDesc || "First aid & Anti-Venom" },
+    { key: "blood", icon: "🩸", bg: "#FEE2E2", color: "#DC2626", title: t.bloodBank, desc: t.bloodBankDesc },
+    { key: "polio", icon: "👶", bg: "#FEF3C7", color: "#D97706", title: t.childImmunization || "Child Polio Drops", desc: t.childImmunizationDesc || "Vaccination calendar" },
+    { key: "ai", icon: "🤖", bg: "#F3E8FF", color: "#7E22CE", title: t.aiAssistant || "AI Health Copilot", desc: t.aiAssistantDesc || "Voice medical advisor" },
+    { key: "hospitals", icon: "🏥", bg: "#EBF3FC", color: "#0F6CBD", title: t.findHospital, desc: t.findHospitalDesc },
+    { key: "weather", icon: "🌦️", bg: "#E0F2FE", color: "#0284C7", title: t.weatherAlerts || "Weather Alerts", desc: t.weatherAlertsDesc || "Flood & outbreak alerts" },
+    { key: "medicines", icon: "💊", bg: "#E6F7F5", color: "#0D9488", title: t.medicines, desc: t.medicinesDesc },
+    { key: "pregnancy", icon: "🤰", bg: "#FFF7ED", color: "#F97316", title: t.pregnancyCare, desc: t.pregnancyCareDesc },
+    { key: "organ", icon: "🫀", bg: "#F3E8FF", color: "#7E22CE", title: t.organDonation, desc: t.organDonationDesc }
+  ];
+
+  const filteredItems = citizenItems.filter((item) =>
+    (item.title || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="page-content">
-      {/* Voice / Tap Hero Section */}
       <div className="voice-assistant-panel">
         <h2 style={{ color: "white", fontSize: "19px", margin: 0 }}>{t.howCanWeHelp}</h2>
         <p style={{ color: "#E0F2FE", fontSize: "13px", marginTop: "4px" }}>{t.tapOrSpeak}</p>
@@ -93,7 +109,14 @@ export function CitizenHome({ lang = "en", t }) {
         </div>
       </div>
 
-      {/* Primary Emergency Banner */}
+      <input
+        type="text"
+        placeholder={lang === "te" ? "🔍 సేవను వెతకండి..." : "🔍 Search services (e.g. blood, vaccine)..."}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        style={{ marginBottom: "14px" }}
+      />
+
       <div
         onClick={() => setShowEmergency(true)}
         style={{
@@ -118,89 +141,23 @@ export function CitizenHome({ lang = "en", t }) {
         <span className="badge" style={{ background: "#DC2626", color: "white" }}>108 CALL</span>
       </div>
 
-      {/* CareLink Citizen Grid */}
-      <div className="icon-card-grid">
-        {/* Snakebite & Venom SOS */}
-        <div className="icon-card" onClick={() => setActiveScreen("snake")}>
-          <div className="icon-card-bubble" style={{ background: "#FEE2E2", color: "#DC2626" }}>
-            🐍
-          </div>
-          <div className="icon-card-title">{t.snakebiteEmergency || "Snakebite SOS"}</div>
-          <div className="icon-card-desc">{t.snakebiteEmergencyDesc || "First aid & Anti-Venom"}</div>
+      {filteredItems.length === 0 ? (
+        <p style={{ textAlign: "center", color: "#94A3B8", padding: "20px" }}>
+          No matching services found.
+        </p>
+      ) : (
+        <div className="icon-card-grid">
+          {filteredItems.map((item) => (
+            <div className="icon-card" key={item.key} onClick={() => setActiveScreen(item.key)}>
+              <div className="icon-card-bubble" style={{ background: item.bg, color: item.color }}>
+                {item.icon}
+              </div>
+              <div className="icon-card-title">{item.title}</div>
+              <div className="icon-card-desc">{item.desc}</div>
+            </div>
+          ))}
         </div>
-
-        {/* Accident Blood Finder */}
-        <div className="icon-card" onClick={() => setActiveScreen("blood")}>
-          <div className="icon-card-bubble" style={{ background: "#FEE2E2", color: "#DC2626" }}>
-            🩸
-          </div>
-          <div className="icon-card-title">{t.bloodBank}</div>
-          <div className="icon-card-desc">{t.bloodBankDesc}</div>
-        </div>
-
-        {/* Child Polio & Vaccines */}
-        <div className="icon-card" onClick={() => setActiveScreen("polio")}>
-          <div className="icon-card-bubble" style={{ background: "#FEF3C7", color: "#D97706" }}>
-            👶
-          </div>
-          <div className="icon-card-title">{t.childImmunization || "Child Polio Drops"}</div>
-          <div className="icon-card-desc">{t.childImmunizationDesc || "Vaccination calendar"}</div>
-        </div>
-
-        {/* AI Health Copilot */}
-        <div className="icon-card" onClick={() => setActiveScreen("ai")}>
-          <div className="icon-card-bubble" style={{ background: "#F3E8FF", color: "#7E22CE" }}>
-            🤖
-          </div>
-          <div className="icon-card-title">{t.aiAssistant || "AI Health Copilot"}</div>
-          <div className="icon-card-desc">{t.aiAssistantDesc || "Voice medical advisor"}</div>
-        </div>
-
-        {/* Find Hospital */}
-        <div className="icon-card" onClick={() => setActiveScreen("hospitals")}>
-          <div className="icon-card-bubble" style={{ background: "#EBF3FC", color: "#0F6CBD" }}>
-            🏥
-          </div>
-          <div className="icon-card-title">{t.findHospital}</div>
-          <div className="icon-card-desc">{t.findHospitalDesc}</div>
-        </div>
-
-        {/* Weather & Seasonal Alerts */}
-        <div className="icon-card" onClick={() => setActiveScreen("weather")}>
-          <div className="icon-card-bubble" style={{ background: "#E0F2FE", color: "#0284C7" }}>
-            🌦️
-          </div>
-          <div className="icon-card-title">{t.weatherAlerts || "Weather Alerts"}</div>
-          <div className="icon-card-desc">{t.weatherAlertsDesc || "Flood & outbreak alerts"}</div>
-        </div>
-
-        {/* Medicines & Reminders */}
-        <div className="icon-card" onClick={() => setActiveScreen("medicines")}>
-          <div className="icon-card-bubble" style={{ background: "#E6F7F5", color: "#0D9488" }}>
-            💊
-          </div>
-          <div className="icon-card-title">{t.medicines}</div>
-          <div className="icon-card-desc">{t.medicinesDesc}</div>
-        </div>
-
-        {/* Pregnancy & Child Care */}
-        <div className="icon-card" onClick={() => setActiveScreen("pregnancy")}>
-          <div className="icon-card-bubble" style={{ background: "#FFF7ED", color: "#F97316" }}>
-            🤰
-          </div>
-          <div className="icon-card-title">{t.pregnancyCare}</div>
-          <div className="icon-card-desc">{t.pregnancyCareDesc}</div>
-        </div>
-
-        {/* Organ Donation */}
-        <div className="icon-card" onClick={() => setActiveScreen("organ")}>
-          <div className="icon-card-bubble" style={{ background: "#F3E8FF", color: "#7E22CE" }}>
-            🫀
-          </div>
-          <div className="icon-card-title">{t.organDonation}</div>
-          <div className="icon-card-desc">{t.organDonationDesc}</div>
-        </div>
-      </div>
+      )}
 
       {showEmergency && <EmergencyModal onClose={() => setShowEmergency(false)} lang={lang} />}
     </div>
