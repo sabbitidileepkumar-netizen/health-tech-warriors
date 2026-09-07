@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 // PASTE YOUR GEMINI API KEY BELOW (between the quotes)
-const GEMINI_API_KEY = "PASTE_YOUR_KEY_HERE";
+const GEMINI_API_KEY = "AQ.Ab8RN6IXVpfeM4FqDt22PZYtiOGAHbjIiEpL0t8Vv6pMS5j-6g";
 
 export function AIAssistant({ onBack, lang = "en" }) {
   const [query, setQuery] = useState("");
