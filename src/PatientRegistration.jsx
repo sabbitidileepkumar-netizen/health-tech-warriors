@@ -4,6 +4,7 @@ import { addPatient } from "./dataStore";
 function PatientRegistration({ onBack, t, lang = "en" }) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
+  const [gender, setGender] = useState("Male");
   const [village, setVillage] = useState("Relangi");
   const [category, setCategory] = useState("Adult");
   const [phone, setPhone] = useState("");
@@ -15,12 +16,21 @@ function PatientRegistration({ onBack, t, lang = "en" }) {
   const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
   const bloodGroups = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
-  const getCategory = (ageValue) => {
+  const getCategory = (ageValue, genderValue) => {
     const a = Number(ageValue);
     if (!ageValue || isNaN(a)) return "Adult";
     if (a <= 12) return "Child";
-    if (a <= 59) return "Adult";
+    if (a <= 29) return "Adult";
+    if (a <= 44) return genderValue === "Female" ? "Woman" : "Man";
     return "Elderly";
+  };
+
+  const categoryDisplay = {
+    Child: "👶 Child",
+    Adult: "🧑 Adult",
+    Man: "👨 Man",
+    Woman: "👩 Woman",
+    Elderly: "👴 Elderly"
   };
 
   const handleSubmit = async (e) => {
@@ -32,6 +42,7 @@ function PatientRegistration({ onBack, t, lang = "en" }) {
       await addPatient({
         name,
         age: Number(age),
+        gender,
         village,
         category,
         phone: phone || "Not Provided",
@@ -103,24 +114,35 @@ function PatientRegistration({ onBack, t, lang = "en" }) {
                 onChange={(e) => {
                   const val = e.target.value;
                   setAge(val);
-                  setCategory(getCategory(val));
+                  setCategory(getCategory(val, gender));
                 }}
                 required
               />
             </div>
             <div>
-              <label>📋 {lang === "te" ? "కేటగిరీ" : "Category"}</label>
-              <input
-                type="text"
-                value={
-                  category === "Child" ? "👶 Child" :
-                  category === "Elderly" ? "👴 Elderly" :
-                  "🧑 Adult"
-                }
-                readOnly
-                style={{ background: "#F3F4F6", cursor: "not-allowed" }}
-              />
+              <label>⚧ {lang === "te" ? "లింగం" : "Gender"}</label>
+              <select
+                value={gender}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setGender(val);
+                  setCategory(getCategory(age, val));
+                }}
+              >
+                <option value="Male">👨 Male</option>
+                <option value="Female">👩 Female</option>
+              </select>
             </div>
+          </div>
+
+          <div style={{ marginBottom: "12px" }}>
+            <label>📋 {lang === "te" ? "కేటగిరీ" : "Category"} (Auto)</label>
+            <input
+              type="text"
+              value={categoryDisplay[category] || category}
+              readOnly
+              style={{ background: "#F3F4F6", cursor: "not-allowed" }}
+            />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
