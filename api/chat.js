@@ -10,7 +10,7 @@ export default async function handler(req, res) {
 
     if (!apiKey) {
       return res.status(500).json({
-        error: "GEMINI_API_KEY is not configured in Vercel.",
+        error: "GEMINI_API_KEY is missing in Vercel.",
       });
     }
 
@@ -20,11 +20,7 @@ export default async function handler(req, res) {
       history = [],
     } = req.body || {};
 
-    if (
-      !message ||
-      typeof message !== "string" ||
-      !message.trim()
-    ) {
+    if (!message || typeof message !== "string") {
       return res.status(400).json({
         error: "Please enter a health question.",
       });
@@ -62,34 +58,52 @@ export default async function handler(req, res) {
       : [];
 
     const systemInstruction = `
-You are CareLink AI, a patient health guidance assistant
-for a healthcare application in India.
+You are CareLink AI, a safe patient health guidance assistant
+for people in India.
 
-Your job is to provide clear, calm, simple and safe
-general health information.
+IMPORTANT:
 
-IMPORTANT SAFETY RULES:
+- You are NOT a doctor.
+- Do not diagnose diseases.
+- Do not prescribe prescription medicines.
+- Give general educational health information.
+- Do not give dangerous or risky instructions.
+- If the question suggests an emergency, clearly tell the
+  person to seek urgent medical attention.
+- Do not invent hospitals, doctors, phone numbers,
+  addresses or medical records.
+- Use simple language.
+- Always answer in ${selectedLanguage}.
+- Use helpful symbols/emojis where appropriate.
+- Ask useful follow-up questions when important information
+  is missing.
 
-1. You are NOT a doctor.
-2. Never claim to diagnose a disease.
-3. Do not prescribe prescription medicines.
-4. Do not give dangerous instructions or risky home procedures.
-5. If symptoms could represent an emergency, clearly advise
-   the person to seek urgent medical attention.
-6. Never tell a person to ignore severe symptoms.
-7. Explain important warning signs clearly.
-8. Use simple language that ordinary patients can understand.
-9. When important information is missing, ask a small number
-   of useful follow-up questions.
-10. Do not invent hospitals, doctors, phone numbers,
-    addresses, test results or medical records.
-11. Always respond in ${selectedLanguage}.
-12. Use helpful symbols and short sections where appropriate.
-13. Keep the information educational and general.
-14. If the user asks an unrelated question, politely explain
-    that CareLink is primarily designed for health guidance.
+Return ONLY a valid JSON object.
 
-Return ONLY valid JSON matching the requested schema.
+The JSON MUST have exactly these fields:
+
+{
+  "language": "string",
+  "title": "string",
+  "summary": "string",
+  "urgency": "emergency | urgent | routine | self_care",
+  "emergencyMessage": "string",
+  "steps": [
+    {
+      "icon": "string",
+      "title": "string",
+      "description": "string"
+    }
+  ],
+  "precautions": ["string"],
+  "redFlags": ["string"],
+  "whenToSeekCare": "string",
+  "followUpQuestions": ["string"],
+  "disclaimer": "string"
+}
+
+Do not put markdown fences around the JSON.
+Do not write anything before or after the JSON.
 `;
 
     const contents = [
@@ -98,7 +112,10 @@ Return ONLY valid JSON matching the requested schema.
         role: "user",
         parts: [
           {
-            text: message.trim().slice(0, 5000),
+            text: `${systemInstruction}
+
+Patient's question:
+${message.trim().slice(0, 5000)}`,
           },
         ],
       },
@@ -115,127 +132,10 @@ Return ONLY valid JSON matching the requested schema.
         },
 
         body: JSON.stringify({
-          systemInstruction: {
-            parts: [
-              {
-                text: systemInstruction,
-              },
-            ],
-          },
-
           contents,
 
           generationConfig: {
             temperature: 0.2,
-
-            responseFormat: {
-              text: {
-                mimeType: "application/json",
-
-                schema: {
-                  type: "object",
-
-                  properties: {
-                    language: {
-                      type: "string",
-                    },
-
-                    title: {
-                      type: "string",
-                    },
-
-                    summary: {
-                      type: "string",
-                    },
-
-                    urgency: {
-                      type: "string",
-                      enum: [
-                        "emergency",
-                        "urgent",
-                        "routine",
-                        "self_care",
-                      ],
-                    },
-
-                    emergencyMessage: {
-                      type: "string",
-                    },
-
-                    steps: {
-                      type: "array",
-
-                      items: {
-                        type: "object",
-
-                        properties: {
-                          icon: {
-                            type: "string",
-                          },
-
-                          title: {
-                            type: "string",
-                          },
-
-                          description: {
-                            type: "string",
-                          },
-                        },
-
-                        required: [
-                          "icon",
-                          "title",
-                          "description",
-                        ],
-                      },
-                    },
-
-                    precautions: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-
-                    redFlags: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-
-                    whenToSeekCare: {
-                      type: "string",
-                    },
-
-                    followUpQuestions: {
-                      type: "array",
-                      items: {
-                        type: "string",
-                      },
-                    },
-
-                    disclaimer: {
-                      type: "string",
-                    },
-                  },
-
-                  required: [
-                    "language",
-                    "title",
-                    "summary",
-                    "urgency",
-                    "emergencyMessage",
-                    "steps",
-                    "precautions",
-                    "redFlags",
-                    "whenToSeekCare",
-                    "followUpQuestions",
-                    "disclaimer",
-                  ],
-                },
-              },
-            },
           },
         }),
       }
@@ -269,23 +169,49 @@ Return ONLY valid JSON matching the requested schema.
       );
 
       return res.status(502).json({
-        error: "The AI returned an empty response.",
+        error: "Gemini returned an empty response.",
       });
     }
+
+    let cleanText = rawText;
+
+    // Remove markdown code fences if Gemini adds them.
+    cleanText = cleanText
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
 
     let parsed;
 
     try {
-      parsed = JSON.parse(rawText);
-    } catch (parseError) {
+      parsed = JSON.parse(cleanText);
+    } catch (error) {
       console.error(
-        "JSON parsing error:",
-        rawText
+        "Gemini returned invalid JSON:",
+        cleanText
       );
 
-      return res.status(502).json({
-        error: "The AI returned an invalid response.",
-      });
+      /*
+       * Fallback response.
+       * This prevents the frontend from crashing if Gemini
+       * accidentally returns plain text instead of JSON.
+       */
+      parsed = {
+        language: selectedLanguage,
+        title: "CareLink AI",
+        summary: cleanText,
+        urgency: "routine",
+        emergencyMessage: "",
+        steps: [],
+        precautions: [],
+        redFlags: [],
+        whenToSeekCare:
+          "If symptoms are severe, worsening, or concerning, seek medical attention.",
+        followUpQuestions: [],
+        disclaimer:
+          "CareLink AI provides general health information and is not a substitute for a doctor.",
+      };
     }
 
     return res.status(200).json(parsed);
