@@ -6,6 +6,7 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
   const [highPriorityCount, setHighPriorityCount] = useState(0);
   const [activeOutbreak, setActiveOutbreak] = useState(null);
   const [disasterActive, setDisasterActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const unsub1 = subscribeToCollection("patients", (patients) => {
@@ -47,6 +48,10 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
     { key: "stats", label: t.reportsStats || "Reports & Stats", icon: "📊", color: "#0F6CBD", bg: "#EBF3FC" }
   ];
 
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="page-content">
       <div style={{ background: "linear-gradient(135deg, #0F6CBD 0%, #0A4373 100%)", color: "white", padding: "18px", borderRadius: "16px", marginBottom: "16px", boxShadow: "var(--shadow-md)" }}>
@@ -69,6 +74,14 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
           </div>
         </div>
       </div>
+
+      <input
+        type="text"
+        placeholder={lang === "te" ? "🔍 సాధనం వెతకండి..." : "🔍 Search tools (e.g. triage, hospital)..."}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        style={{ marginBottom: "14px" }}
+      />
 
       {disasterActive && (
         <div
@@ -115,20 +128,26 @@ export function HomeDashboard({ onNavigate, t, lang = "en" }) {
         </div>
       )}
 
-      <div className="icon-card-grid">
-        {menuItems.map((item) => (
-          <div
-            key={item.key}
-            className="icon-card"
-            onClick={() => onNavigate(item.key)}
-          >
-            <div className="icon-card-bubble" style={{ background: item.bg, color: item.color }}>
-              {item.icon}
+      {filteredMenuItems.length === 0 ? (
+        <p style={{ textAlign: "center", color: "#94A3B8", padding: "20px" }}>
+          No matching tools found.
+        </p>
+      ) : (
+        <div className="icon-card-grid">
+          {filteredMenuItems.map((item) => (
+            <div
+              key={item.key}
+              className="icon-card"
+              onClick={() => onNavigate(item.key)}
+            >
+              <div className="icon-card-bubble" style={{ background: item.bg, color: item.color }}>
+                {item.icon}
+              </div>
+              <div className="icon-card-title">{item.label}</div>
             </div>
-            <div className="icon-card-title">{item.label}</div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
