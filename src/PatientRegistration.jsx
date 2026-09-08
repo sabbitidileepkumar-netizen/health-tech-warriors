@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { addPatient } from "./dataStore";
+import { saveWithOfflineSupport } from "./offlineSync";
 
 function PatientRegistration({ onBack, t, lang = "en" }) {
   const [name, setName] = useState("");
@@ -39,19 +39,28 @@ function PatientRegistration({ onBack, t, lang = "en" }) {
     setLoading(true);
 
     try {
-      await addPatient({
-        name,
-        age: Number(age),
-        gender,
-        village,
-        category,
-        phone: phone || "Not Provided",
-        bloodGroup,
-        organDonor,
-        organsPledged: organDonor ? ["Cornea / Eyes", "Kidneys"] : []
-      });
+      const result = await saveWithOfflineSupport(
+        "patients",
+        {
+          name,
+          age: Number(age),
+          gender,
+          village,
+          category,
+          phone: phone || "Not Provided",
+          bloodGroup,
+          organDonor,
+          organsPledged: organDonor ? ["Cornea / Eyes", "Kidneys"] : []
+        },
+        "patients"
+      );
 
-      setMessage("✅ Patient successfully registered & synced!");
+      if (result._pendingSync) {
+        setMessage("📴 Saved on device — will sync when internet is back.");
+      } else {
+        setMessage("✅ Patient successfully registered & synced!");
+      }
+
       setName("");
       setAge("");
       setPhone("");
@@ -82,8 +91,8 @@ function PatientRegistration({ onBack, t, lang = "en" }) {
               padding: "10px",
               borderRadius: "8px",
               marginBottom: "14px",
-              background: message.includes("✅") ? "#DCFCE7" : "#FEE2E2",
-              color: message.includes("✅") ? "#166534" : "#991B1B",
+              background: message.includes("✅") ? "#DCFCE7" : message.includes("📴") ? "#FEF3C7" : "#FEE2E2",
+              color: message.includes("✅") ? "#166534" : message.includes("📴") ? "#92400E" : "#991B1B",
               fontSize: "13px",
               fontWeight: "600"
             }}
