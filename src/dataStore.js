@@ -1,6 +1,7 @@
 // Centralized Data Layer for CareLink (Firestore real-time + local cache)
 import { db } from './firebase';
 import { collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { saveWithOfflineSupport } from './offlineSync';
 
 const INITIAL_DATA = {
   patients: [],
@@ -81,17 +82,17 @@ export async function addPatient(patient) {
 }
 
 export async function addTriageRecord(record) {
-  const docRef = await addDoc(collection(db, 'triage_records'), {
-    ...record,
-    timestamp: new Date().toISOString(),
-    createdAt: serverTimestamp()
-  });
+  const result = await saveWithOfflineSupport(
+    'triage_records',
+    { ...record, timestamp: new Date().toISOString() },
+    'triage_records'
+  );
 
   if (record.village) {
     incrementVillageCase(record.village, record.symptoms);
   }
 
-  return { id: docRef.id, ...record };
+  return result;
 }
 
 export async function addReferral(refData) {
