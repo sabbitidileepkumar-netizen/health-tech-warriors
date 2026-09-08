@@ -213,12 +213,20 @@ export function VenomousAnimalTracker({ onBack, lang = "en" }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
                 <div>
                   <label>Village Location</label>
-                  <select value={village} onChange={(e) => setVillage(e.target.value)}>
-                    <option value="Relangi">Relangi</option>
-                    <option value="Tanuku">Tanuku</option>
-                    <option value="Attili">Attili</option>
-                    <option value="K.S. Gattu">K.S. Gattu</option>
-                  </select>
+                  <input
+                    type="text"
+                    list="village-options"
+                    placeholder="Type village name"
+                    value={village}
+                    onChange={(e) => setVillage(e.target.value)}
+                    required
+                  />
+                  <datalist id="village-options">
+                    <option value="Relangi" />
+                    <option value="Tanuku" />
+                    <option value="Attili" />
+                    <option value="K.S. Gattu" />
+                  </datalist>
                 </div>
 
                 <div>
