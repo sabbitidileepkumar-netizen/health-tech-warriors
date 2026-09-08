@@ -17,7 +17,7 @@ function Triage({ onBack, onNavigateToReferral, t }) {
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [selectedSymptoms, setSelectedSymptoms] = useState({});
   const [result, setResult] = useState(null);
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [savedSuccess, setSavedSuccess] = useState(null);
 
   useEffect(() => {
     const unsub = subscribeToCollection("patients", (list) => {
@@ -77,16 +77,21 @@ function Triage({ onBack, onNavigateToReferral, t }) {
 
     const activeSymptoms = Object.keys(selectedSymptoms).filter((k) => selectedSymptoms[k]);
 
-    await addTriageRecord({
-      patientId: selectedPatient.id,
-      patientName: selectedPatient.name,
-      village: selectedPatient.village,
-      symptoms: activeSymptoms,
-      score,
-      priorityLevel: priority.level
-    });
+    try {
+      const savedResult = await addTriageRecord({
+        patientId: selectedPatient.id,
+        patientName: selectedPatient.name,
+        village: selectedPatient.village,
+        symptoms: activeSymptoms,
+        score,
+        priorityLevel: priority.level
+      });
 
-    setSavedSuccess(true);
+      setSavedSuccess(savedResult._pendingSync ? "offline" : "online");
+    } catch (err) {
+      console.error(err);
+      setSavedSuccess("error");
+    }
   };
 
   return (
@@ -183,9 +188,19 @@ function Triage({ onBack, onNavigateToReferral, t }) {
               {result.action}
             </p>
 
-            {savedSuccess && (
+            {savedSuccess === "online" && (
               <div style={{ marginTop: "10px", fontSize: "12px", color: "#166534", fontWeight: "bold" }}>
                 ✓ Record saved to Priority Queue and Village Surveillance
+              </div>
+            )}
+            {savedSuccess === "offline" && (
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "#92400E", fontWeight: "bold" }}>
+                📴 Saved on device — will sync when internet is back
+              </div>
+            )}
+            {savedSuccess === "error" && (
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "#991B1B", fontWeight: "bold" }}>
+                ❌ Could not save record. Please try again.
               </div>
             )}
 
