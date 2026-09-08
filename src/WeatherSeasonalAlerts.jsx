@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { getLocal } from "./dataStore";
 
+const DEFAULT_COORDS = { lat: 16.704, lon: 81.630 }; // Relangi fallback
+
 export function WeatherSeasonalAlerts({ onBack, lang = "en" }) {
   const [weather, setWeather] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(true);
   const [checklist, setChecklist] = useState({
     chlorine: false,
     orsPacks: true,
@@ -12,7 +15,57 @@ export function WeatherSeasonalAlerts({ onBack, lang = "en" }) {
 
   useEffect(() => {
     setWeather(getLocal("weather_intelligence"));
+    fetchLiveWeather();
   }, []);
+
+  const applyCoords = async (lat, lon) => {
+    try {
+      const [wRes, geoRes] = await Promise.all([
+        fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m&daily=precipitation_sum&timezone=auto`
+        ),
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+      ]);
+      const wData = await wRes.json();
+      const geoData = await geoRes.json();
+
+      const rainToday = wData.daily?.precipitation_sum?.[0] ?? 0;
+      const floodRisk = rainToday > 100 ? "High" : rainToday > 40 ? "Moderate" : "Low";
+      const forecast =
+        rainToday > 20 ? "Heavy rain expected" : rainToday > 5 ? "Light rain likely" : "Clear skies";
+      const placeName =
+        geoData.address?.village ||
+        geoData.address?.town ||
+        geoData.address?.city ||
+        geoData.address?.county ||
+        "Your Area";
+
+      setWeather((prev) => ({
+        ...prev,
+        region: placeName,
+        temp: wData.current?.temperature_2m != null ? Math.round(wData.current.temperature_2m) + "°C" : prev?.temp,
+        humidity: wData.current?.relative_humidity_2m != null ? wData.current.relative_humidity_2m + "%" : prev?.humidity,
+        forecast,
+        floodRisk
+      }));
+    } catch (err) {
+      console.warn("Live weather fetch failed, showing cached data.", err);
+    } finally {
+      setLiveLoading(false);
+    }
+  };
+
+  const fetchLiveWeather = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => applyCoords(pos.coords.latitude, pos.coords.longitude),
+        () => applyCoords(DEFAULT_COORDS.lat, DEFAULT_COORDS.lon),
+        { timeout: 5000 }
+      );
+    } else {
+      applyCoords(DEFAULT_COORDS.lat, DEFAULT_COORDS.lon);
+    }
+  };
 
   const toggleTask = (key) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -24,10 +77,11 @@ export function WeatherSeasonalAlerts({ onBack, lang = "en" }) {
     <div className="page-content">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <button className="btn-outline" onClick={onBack}>⬅️ Back</button>
-        <span className="badge" style={{ background: "#E0F2FE", color: "#0369A1" }}>Met Department & Health Sync</span>
+        <span className="badge" style={{ background: "#E0F2FE", color: "#0369A1" }}>
+          {liveLoading ? "🔄 Fetching live weather..." : "🛰️ Live Met Data"}
+        </span>
       </div>
 
-      {/* Weather Header Card */}
       <div style={{ background: "linear-gradient(135deg, #0284C7 0%, #0369A1 100%)", color: "white", padding: "20px", borderRadius: "16px", marginBottom: "16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
@@ -49,7 +103,6 @@ export function WeatherSeasonalAlerts({ onBack, lang = "en" }) {
         </div>
       </div>
 
-      {/* Seasonal Threat Matrix */}
       <h3 style={{ marginBottom: "10px" }}>
         {lang === "te" ? "ప్రస్తుత సీజనల్ వ్యాధుల ప్రమాద సూచిక" : "Active Seasonal Health Risks"}
       </h3>
@@ -89,7 +142,6 @@ export function WeatherSeasonalAlerts({ onBack, lang = "en" }) {
         })}
       </div>
 
-      {/* ASHA Preventive Field Action Checklist */}
       <div className="care-card">
         <h3 style={{ color: "#0F6CBD", margin: "0 0 12px" }}>
           📋 {lang === "te" ? "ఆశా కార్యకర్త నివారణ చర్యల చెక్‌లిస్ట్" : "ASHA Field Preparedness Checklist"}
@@ -103,7 +155,7 @@ export function WeatherSeasonalAlerts({ onBack, lang = "en" }) {
               onChange={() => toggleTask("chlorine")}
               style={{ width: "auto" }}
             />
-            <span>Chlorinate drinking water wells in Relangi low-lying areas</span>
+            <span>Chlorinate drinking water wells in low-lying areas</span>
           </label>
 
           <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
@@ -123,7 +175,7 @@ export function WeatherSeasonalAlerts({ onBack, lang = "en" }) {
               onChange={() => toggleTask("mosquitoFogging")}
               style={{ width: "auto" }}
             />
-            <span>Coordinate with Gram Panchayat for anti-larval spray in Attili</span>
+            <span>Coordinate with Gram Panchayat for anti-larval spray</span>
           </label>
 
           <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
