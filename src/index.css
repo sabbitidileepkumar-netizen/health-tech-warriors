@@ -425,3 +425,8 @@ button:active {
     display: block !important;
   }
 }
+/* ...all your existing CSS above... */
+
+input[list]::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
