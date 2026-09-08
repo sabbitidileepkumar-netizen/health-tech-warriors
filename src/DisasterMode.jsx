@@ -1,18 +1,74 @@
 import React, { useState, useEffect } from "react";
-import { getLocal, toggleDisasterActive } from "./dataStore";
+import { getLocal, saveLocal, toggleDisasterActive } from "./dataStore";
+
+const DEFAULT_COORDS = { lat: 16.704, lon: 81.630 }; // Relangi fallback
 
 export function DisasterMode({ onBack, lang = "en" }) {
   const [disaster, setDisaster] = useState(null);
   const [halazoneTabs, setHalazoneTabs] = useState(340);
   const [orsDistributed, setOrsDistributed] = useState(210);
+  const [liveRisk, setLiveRisk] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(true);
 
   useEffect(() => {
     setDisaster(getLocal("disaster_status"));
+    fetchLiveFloodRisk();
   }, []);
 
+  const applyCoords = async (lat, lon) => {
+    try {
+      const [wRes, geoRes] = await Promise.all([
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=precipitation_sum&timezone=auto`),
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+      ]);
+      const wData = await wRes.json();
+      const geoData = await geoRes.json();
+
+      const rainToday = wData.daily?.precipitation_sum?.[0] ?? 0;
+      const level = rainToday > 100 ? "High" : rainToday > 40 ? "Moderate" : "Low";
+      const placeName =
+        geoData.address?.village ||
+        geoData.address?.town ||
+        geoData.address?.city ||
+        geoData.address?.county ||
+        "Your Area";
+
+      setLiveRisk({ rainToday, level, placeName });
+    } catch (err) {
+      console.warn("Live flood risk fetch failed", err);
+    } finally {
+      setLiveLoading(false);
+    }
+  };
+
+  const fetchLiveFloodRisk = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => applyCoords(pos.coords.latitude, pos.coords.longitude),
+        () => applyCoords(DEFAULT_COORDS.lat, DEFAULT_COORDS.lon),
+        { timeout: 5000 }
+      );
+    } else {
+      applyCoords(DEFAULT_COORDS.lat, DEFAULT_COORDS.lon);
+    }
+  };
+
   const handleToggleActive = () => {
+    const willActivate = !disaster.active;
     const updated = toggleDisasterActive();
-    setDisaster({ ...updated });
+
+    if (willActivate && liveRisk) {
+      const merged = {
+        ...updated,
+        alertTitle: `Flood Alert: ${liveRisk.placeName}`,
+        floodLevel: `Live Rainfall Today: ${liveRisk.rainToday}mm (${liveRisk.level} Risk)`,
+        affectedZones: [liveRisk.placeName]
+      };
+      saveLocal("disaster_status", merged);
+      setDisaster(merged);
+    } else {
+      setDisaster({ ...updated });
+    }
   };
 
   const handleDistributeTabs = () => {
@@ -34,7 +90,14 @@ export function DisasterMode({ onBack, lang = "en" }) {
         </span>
       </div>
 
-      {/* Emergency Alert Banner */}
+      <div style={{ background: "#EFF6FF", border: "1.5px solid #93C5FD", borderRadius: "12px", padding: "10px 14px", marginBottom: "14px", fontSize: "12px", color: "#1E40AF" }}>
+        {liveLoading
+          ? "🔄 Detecting live rainfall & location..."
+          : liveRisk
+          ? `🌧️ Live Detected: ${liveRisk.rainToday}mm rain today near ${liveRisk.placeName} — Risk: ${liveRisk.level}`
+          : "⚠️ Could not fetch live weather data."}
+      </div>
+
       <div
         style={{
           background: disaster.active ? "linear-gradient(135deg, #DC2626 0%, #991B1B 100%)" : "linear-gradient(135deg, #475569 0%, #334155 100%)",
@@ -48,10 +111,10 @@ export function DisasterMode({ onBack, lang = "en" }) {
           <div>
             <span style={{ fontSize: "32px" }}>🌊</span>
             <h1 style={{ color: "white", fontSize: "19px", margin: "6px 0 2px" }}>
-              {disaster.alertTitle}
+              {disaster.alertTitle || "No Active Alert"}
             </h1>
             <p style={{ color: "#E2E8F0", margin: 0, fontSize: "13px" }}>
-              {disaster.floodLevel}
+              {disaster.floodLevel || "Monitoring conditions"}
             </p>
           </div>
 
@@ -73,11 +136,10 @@ export function DisasterMode({ onBack, lang = "en" }) {
         </div>
 
         <div style={{ marginTop: "12px", fontSize: "12px", background: "rgba(255,255,255,0.15)", padding: "8px 12px", borderRadius: "8px" }}>
-          ⚠️ <strong>Affected Zones:</strong> {disaster.affectedZones?.join(", ")}
+          ⚠️ <strong>Affected Zones:</strong> {disaster.affectedZones?.length ? disaster.affectedZones.join(", ") : "None currently"}
         </div>
       </div>
 
-      {/* Relief Supply Distribution Counter */}
       <div className="care-card" style={{ marginBottom: "16px" }}>
         <h3 style={{ margin: "0 0 12px", color: "#0F6CBD" }}>
           📦 {lang === "te" ? "వరద సహాయక సామాగ్రి పంపిణీ" : "Emergency Flood Relief Supply Counter"}
@@ -110,7 +172,6 @@ export function DisasterMode({ onBack, lang = "en" }) {
         </div>
       </div>
 
-      {/* Evacuation Shelters */}
       <h3 style={{ marginBottom: "10px" }}>
         {lang === "te" ? "పునరావాస కేంద్రాలు (Relief Shelters)" : "Designated Emergency Relief Shelters"}
       </h3>
@@ -140,7 +201,6 @@ export function DisasterMode({ onBack, lang = "en" }) {
                 </div>
               </div>
 
-              {/* Progress Bar */}
               <div style={{ width: "100%", background: "#E2E8F0", height: "6px", borderRadius: "3px", marginTop: "10px", overflow: "hidden" }}>
                 <div
                   style={{
@@ -155,7 +215,6 @@ export function DisasterMode({ onBack, lang = "en" }) {
         })}
       </div>
 
-      {/* SDMA Hotline */}
       <div style={{ background: "#FEF2F2", border: "1.5px solid #FECACA", borderRadius: "12px", padding: "12px", textAlign: "center" }}>
         <span style={{ fontSize: "13px", color: "#991B1B", fontWeight: "bold" }}>
           🚨 District Disaster Control Room (West Godavari): 112 / 08812-230100
