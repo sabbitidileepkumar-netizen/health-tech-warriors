@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { subscribeToCollection, addTriageRecord } from "./dataStore";
+import { subscribeToCollection, addTriageRecord, getLocal } from "./dataStore";
 
 const symptomsList = [
   { key: "breathing", label: "Breathing Difficulty", icon: "🫁", weight: 8 },
@@ -13,7 +13,7 @@ const symptomsList = [
 ];
 
 function Triage({ onBack, onNavigateToReferral, t }) {
-  const [patients, setPatients] = useState([]);
+  const [patients, setPatients] = useState(() => getLocal("patients"));
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [selectedSymptoms, setSelectedSymptoms] = useState({});
   const [result, setResult] = useState(null);
