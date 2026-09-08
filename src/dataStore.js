@@ -73,12 +73,12 @@ export function subscribeToCollection(collectionName, callback) {
   }
 }
 
+// FIXED: now routes through the offline-support queue, same as addTriageRecord.
+// This writes the new patient into localStorage (carelink_patients) immediately,
+// so they show up in Triage's dropdown right away — online or offline — and
+// queues the real Firestore write for whenever the device reconnects.
 export async function addPatient(patient) {
-  const docRef = await addDoc(collection(db, 'patients'), {
-    ...patient,
-    createdAt: serverTimestamp()
-  });
-  return { id: docRef.id, ...patient };
+  return await saveWithOfflineSupport('patients', patient, 'patients');
 }
 
 export async function addTriageRecord(record) {
