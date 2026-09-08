@@ -71,3 +71,8 @@
   font-size: 12px;
   font-weight: 600;
 }
+/* ...all your existing CSS above... */
+
+input[list]::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
