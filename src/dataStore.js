@@ -1,6 +1,6 @@
 // Centralized Data Layer for CareLink (Firestore real-time + local cache)
 import { db } from './firebase';
-import { collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, serverTimestamp, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 
 const INITIAL_DATA = {
   patients: [],
@@ -126,20 +126,44 @@ export function addBloodDonor(donor) {
   return newDonor;
 }
 
-export function updateChildDoseStatus(childId, doseId, nextStatus) {
-  const list = getLocal('child_vaccines');
-  const updated = list.map(child => {
-    if (child.childId === childId) {
-      return {
-        ...child,
-        doses: child.doses.map(d => d.id === doseId ? { ...d, status: nextStatus, dateGiven: nextStatus === 'Completed' ? new Date().toISOString().split('T')[0] : null } : d)
-      };
-    }
-    return child;
-  });
-  saveLocal('child_vaccines', updated);
-  return updated;
+// === CHILD VACCINE TRACKING (Firestore — shared live between ASHA & Citizen portals) ===
+
+export function generateDefaultDoses() {
+  return [
+    { id: "d1", name: "BCG + OPV-0 + Hep B-0", duePeriod: "At Birth", status: "Upcoming", dateGiven: null },
+    { id: "d2", name: "OPV-1 + Penta-1 + Rota-1", duePeriod: "6 Weeks", status: "Upcoming", dateGiven: null },
+    { id: "d3", name: "OPV-2 + Penta-2 + Rota-2", duePeriod: "10 Weeks", status: "Upcoming", dateGiven: null },
+    { id: "d4", name: "OPV-3 + Penta-3 + Rota-3", duePeriod: "14 Weeks", status: "Upcoming", dateGiven: null },
+    { id: "d5", name: "Measles-Rubella (MR-1)", duePeriod: "9 Months", status: "Upcoming", dateGiven: null },
+    { id: "d6", name: "DPT Booster + OPV Booster + MR-2", duePeriod: "16-24 Months", status: "Upcoming", dateGiven: null }
+  ];
 }
+
+export function subscribeToChildVaccines(callback) {
+  return subscribeToCollection("child_vaccines", callback);
+}
+
+export async function addChildVaccineRecord(child) {
+  const docRef = await addDoc(collection(db, "child_vaccines"), {
+    ...child,
+    doses: generateDefaultDoses(),
+    createdAt: serverTimestamp()
+  });
+  return { id: docRef.id, ...child };
+}
+
+export async function updateChildDoseStatusFirestore(childDocId, doseId, currentDoses, nextStatus) {
+  const updatedDoses = currentDoses.map((d) =>
+    d.id === doseId
+      ? { ...d, status: nextStatus, dateGiven: nextStatus === "Completed" ? new Date().toISOString().split("T")[0] : null }
+      : d
+  );
+  const ref = doc(db, "child_vaccines", childDocId);
+  await updateDoc(ref, { doses: updatedDoses });
+  return updatedDoses;
+}
+
+// === END CHILD VACCINE TRACKING ===
 
 export function reportVenomIncident(incident) {
   const list = getLocal('venom_incidents');
