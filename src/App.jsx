@@ -34,9 +34,9 @@ function App() {
   const [ashaAuth, setAshaAuth] = useState(null);
 
   const [userLocation, setUserLocation] = useState({
-    village: "Relangi (Tanuku Mandal)",
-    coords: "16.85° N, 81.69° E",
-    accuracy: "High (GPS Detected)"
+    village: "Detecting location...",
+    coords: "—",
+    accuracy: "Locating..."
   });
 
   useEffect(() => {
@@ -49,20 +49,57 @@ function App() {
       } catch (_e) {}
     }
 
+    // Looks up a real place name for given coordinates using OpenStreetMap's
+    // free Nominatim reverse-geocoding API (no key required).
+    const reverseGeocode = async (lat, lon) => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14&addressdetails=1`,
+          { headers: { Accept: "application/json" } }
+        );
+        const data = await res.json();
+        const addr = data.address || {};
+        return (
+          addr.village ||
+          addr.town ||
+          addr.suburb ||
+          addr.city ||
+          addr.county ||
+          data.display_name ||
+          "Unknown Location"
+        );
+      } catch (_e) {
+        return "Location name unavailable";
+      }
+    };
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+
+          // Show coordinates immediately, then fill in the real place name
+          // once the reverse-geocoding lookup finishes.
           setUserLocation({
-            village: "Relangi (Tanuku Mandal)",
-            coords: pos.coords.latitude.toFixed(3) + "° N, " + pos.coords.longitude.toFixed(3) + "° E",
+            village: "Detecting location...",
+            coords: lat.toFixed(3) + "° N, " + lon.toFixed(3) + "° E",
+            accuracy: "Live GPS Active (" + Math.round(pos.coords.accuracy) + "m)"
+          });
+
+          const placeName = await reverseGeocode(lat, lon);
+
+          setUserLocation({
+            village: placeName,
+            coords: lat.toFixed(3) + "° N, " + lon.toFixed(3) + "° E",
             accuracy: "Live GPS Active (" + Math.round(pos.coords.accuracy) + "m)"
           });
         },
         () => {
           setUserLocation({
-            village: "Relangi (Tanuku Mandal)",
-            coords: "16.852° N, 81.698° E",
-            accuracy: "Cell-Tower Triangulated"
+            village: "Location Unavailable",
+            coords: "—",
+            accuracy: "GPS Permission Denied"
           });
         },
         { timeout: 5000 }
