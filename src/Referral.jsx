@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { getLocal, addReferral, updateReferralStatus } from "./dataStore";
 
@@ -89,11 +90,19 @@ function Referral({ onBack, defaultPatient, lang = "en" }) {
 
           <div style={{ marginBottom: "12px" }}>
             <label>🏥 {lang === "te" ? "తరలించాల్సిన ఆసుపత్రి:" : "Target Medical Facility:"}</label>
-            <select value={facility} onChange={(e) => setFacility(e.target.value)}>
+            <input
+              type="text"
+              list="facility-options"
+              placeholder="Type or choose a facility"
+              value={facility}
+              onChange={(e) => setFacility(e.target.value)}
+              required
+            />
+            <datalist id="facility-options">
               {facilities.map((f) => (
-                <option key={f} value={f}>{f}</option>
+                <option key={f} value={f} />
               ))}
-            </select>
+            </datalist>
           </div>
 
           <div style={{ marginBottom: "12px" }}>
