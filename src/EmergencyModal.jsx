@@ -1,18 +1,27 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 
-export function EmergencyModal({ onClose, lang = "en" }) {
+export function EmergencyModal({ onClose, lang = "en", userLocation }) {
   const [called, setCalled] = useState(null);
 
   const emergencyContacts = [
     { name: "National Ambulance Service", number: "108", desc: "For accidents, trauma & critical emergencies", icon: "🚑", color: "#DC2626" },
+    { name: "Police Emergency", number: "100", desc: "Crime, accidents & law enforcement", icon: "🚓", color: "#1D4ED8" },
+    { name: "Fire Emergency", number: "101", desc: "Fire outbreaks & rescue operations", icon: "🔥", color: "#EA580C" },
     { name: "Janani Shishu Ambulance", number: "102", desc: "For pregnant mothers & sick newborns", icon: "🤰", color: "#D97706" },
-    { name: "Maharashtra Health Helpline", number: "104", desc: "24x7 Doctor consultation & health queries", icon: "📞", color: "#0F6CBD" },
-    { name: "Nearest PHC Emergency Desk", number: "0712-256789", desc: "Wardha Rural Primary Health Centre", icon: "🏥", color: "#0D9488" }
+    { name: "Andhra Pradesh Health Helpline", number: "104", desc: "24x7 Doctor consultation & health queries", icon: "📞", color: "#0F6CBD" },
+    { name: "Women's Helpline", number: "181", desc: "24x7 support for women in distress", icon: "🆘", color: "#BE185D" },
+    { name: "Child Helpline", number: "1098", desc: "For child safety & welfare emergencies", icon: "🧒", color: "#7E22CE" },
+    { name: "Nearest PHC Emergency Desk", number: "08819-255789", desc: "Tanuku Government Area Hospital", icon: "🏥", color: "#0D9488" }
   ];
 
   const handleCall = (contact) => {
     setCalled(contact);
   };
+
+  const locationLabel =
+    userLocation && userLocation.village && userLocation.coords
+      ? `${userLocation.village} (${userLocation.coords})`
+      : "Location Unavailable";
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -34,7 +43,7 @@ export function EmergencyModal({ onClose, lang = "en" }) {
             <h3 style={{ color: "#DC2626", marginTop: "10px" }}>Calling {called.number}...</h3>
             <p style={{ fontWeight: 600, color: "#1E293B" }}>{called.name}</p>
             <p style={{ fontSize: "12px", color: "#64748B", marginTop: "6px" }}>
-              📍 Location transmitted: <strong>Sub-District Hub (Wardha/Chandrapur)</strong>
+              📍 Location transmitted: <strong>{locationLabel}</strong>
             </p>
             <div style={{ marginTop: "16px", display: "flex", gap: "8px", justifyContent: "center" }}>
               <a href={`tel:${called.number}`} className="btn-danger" style={{ textDecoration: "none" }}>
@@ -47,6 +56,10 @@ export function EmergencyModal({ onClose, lang = "en" }) {
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ background: "#FEF3C7", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", color: "#92400E" }}>
               ⚠️ In critical accidents, keep the patient still and request nearest ambulance immediately.
+            </div>
+
+            <div style={{ fontSize: "12px", color: "#64748B", padding: "0 2px" }}>
+              📍 Your location: <strong>{locationLabel}</strong>
             </div>
 
             {emergencyContacts.map((c) => (
