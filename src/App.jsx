@@ -16,13 +16,13 @@ import { AboutApp } from "./AboutApp";
 // New Modules
 import { Login } from "./Login";
 import { AllMembers } from "./AllMembers";
-import { ChildImmunization } from "./ChildImmunization";
 import { VenomousAnimalTracker } from "./VenomousAnimalTracker";
 import { WeatherSeasonalAlerts } from "./WeatherSeasonalAlerts";
 import { DisasterMode } from "./DisasterMode";
 import { SupplyIntelligence } from "./SupplyIntelligence";
 import { AIAssistant } from "./AIAssistant";
 import HospitalFinder from "./HospitalFinder";
+import ChildVaccineTracker from "./ChildVaccineTracker";
 
 function App() {
   const [lang, setLang] = useState("te");
@@ -157,7 +157,7 @@ function App() {
       );
     }
     if (screen === "polio") {
-      return <ChildImmunization onBack={() => setScreen("home")} lang={lang} />;
+      return <ChildVaccineTracker onBack={() => setScreen("home")} />;
     }
     if (screen === "venom") {
       return <VenomousAnimalTracker onBack={() => setScreen("home")} lang={lang} />;
