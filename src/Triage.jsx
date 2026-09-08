@@ -14,7 +14,10 @@ const symptomsList = [
 
 function Triage({ onBack, onNavigateToReferral, t }) {
   const [patients, setPatients] = useState(() => getLocal("patients"));
-  const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [selectedPatientId, setSelectedPatientId] = useState(() => {
+    const local = getLocal("patients");
+    return local.length > 0 ? local[0].id : "";
+  });
   const [selectedSymptoms, setSelectedSymptoms] = useState({});
   const [result, setResult] = useState(null);
   const [savedSuccess, setSavedSuccess] = useState(null);
