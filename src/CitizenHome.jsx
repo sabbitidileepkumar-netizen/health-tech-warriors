@@ -21,7 +21,7 @@ import { VenomousAnimalTracker } from "./VenomousAnimalTracker";
 import { WeatherSeasonalAlerts } from "./WeatherSeasonalAlerts";
 import { AIAssistant } from "./AIAssistant";
 
-export function CitizenHome({ lang = "en", t }) {
+export function CitizenHome({ lang = "en", t, userLocation }) {
   const [activeScreen, setActiveScreen] = useState("home");
   const [showEmergency, setShowEmergency] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,7 +125,13 @@ export function CitizenHome({ lang = "en", t }) {
         </div>
       )}
 
-      {showEmergency && <EmergencyModal onClose={() => setShowEmergency(false)} lang={lang} />}
+      {showEmergency && (
+        <EmergencyModal
+          onClose={() => setShowEmergency(false)}
+          lang={lang}
+          userLocation={userLocation}
+        />
+      )}
     </div>
   );
 }
