@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getLocal, updateChildDoseStatus } from "./dataStore";
+import { subscribeToChildVaccines, updateChildDoseStatusFirestore } from "./dataStore";
 
 export function ChildImmunization({ onBack, lang = "en" }) {
   const [children, setChildren] = useState([]);
@@ -7,19 +7,24 @@ export function ChildImmunization({ onBack, lang = "en" }) {
   const [smsAlert, setSmsAlert] = useState(null);
 
   useEffect(() => {
-    const list = getLocal("child_vaccines");
-    setChildren(list);
-    if (list.length > 0) {
-      setSelectedChildId(list[0].childId);
-    }
+    const unsub = subscribeToChildVaccines((list) => {
+      setChildren(list);
+      if (list.length > 0 && !selectedChildId) {
+        setSelectedChildId(list[0].id);
+      }
+    });
+    return () => unsub();
   }, []);
 
-  const activeChild = children.find((c) => c.childId === selectedChildId);
+  const activeChild = children.find((c) => c.id === selectedChildId);
 
-  const handleToggleDose = (childId, doseId, currentStatus) => {
-    const nextStatus = currentStatus === "Completed" ? "Upcoming" : "Completed";
-    const updated = updateChildDoseStatus(childId, doseId, nextStatus);
-    setChildren([...updated]);
+  const handleToggleDose = async (child, dose) => {
+    const nextStatus = dose.status === "Completed" ? "Upcoming" : "Completed";
+    try {
+      await updateChildDoseStatusFirestore(child.id, dose.id, child.doses, nextStatus);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSendReminder = (child, dose) => {
@@ -63,7 +68,6 @@ export function ChildImmunization({ onBack, lang = "en" }) {
         </div>
       </div>
 
-      {/* Pulse Polio Campaign Alert Box */}
       <div style={{ background: "#EFF6FF", border: "1.5px solid #93C5FD", borderRadius: "14px", padding: "14px", marginBottom: "16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "28px" }}>📢</span>
@@ -89,33 +93,37 @@ export function ChildImmunization({ onBack, lang = "en" }) {
         </div>
       )}
 
-      {/* Child Switcher */}
       <div style={{ marginBottom: "14px" }}>
         <label style={{ fontSize: "13px", fontWeight: "bold" }}>
           👶 {lang === "te" ? "పిల్లల రికార్డును ఎంచుకోండి:" : "Select Registered Child:"}
         </label>
-        <select
-          value={selectedChildId}
-          onChange={(e) => setSelectedChildId(e.target.value)}
-          style={{ marginTop: "6px" }}
-        >
-          {children.map((c) => (
-            <option key={c.childId} value={c.childId}>
-              {c.childName} ({c.village}) - Parent: {c.parentName}
-            </option>
-          ))}
-        </select>
+        {children.length === 0 ? (
+          <p style={{ color: "#94A3B8", fontSize: "13px", marginTop: "6px" }}>
+            No children registered yet. Ask your ASHA worker to register your child first.
+          </p>
+        ) : (
+          <select
+            value={selectedChildId}
+            onChange={(e) => setSelectedChildId(e.target.value)}
+            style={{ marginTop: "6px" }}
+          >
+            {children.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.childName} ({c.village}) - Parent: {c.parentName}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {activeChild && (
         <div>
-          {/* Progress Card */}
           <div className="care-card" style={{ marginBottom: "14px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <h3 style={{ margin: 0, color: "#0F172A" }}>{activeChild.childName}</h3>
                 <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#64748B" }}>
-                  DOB: {activeChild.dob} &bull; 🏡 {activeChild.village} &bull; 📞 {activeChild.phone}
+                  🏡 {activeChild.village} &bull; 📞 {activeChild.phone}
                 </p>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -126,7 +134,6 @@ export function ChildImmunization({ onBack, lang = "en" }) {
               </div>
             </div>
 
-            {/* Progress Bar */}
             <div style={{ width: "100%", background: "#E2E8F0", height: "8px", borderRadius: "4px", marginTop: "10px", overflow: "hidden" }}>
               <div
                 style={{
@@ -139,7 +146,6 @@ export function ChildImmunization({ onBack, lang = "en" }) {
             </div>
           </div>
 
-          {/* Doses List */}
           <h3 style={{ marginBottom: "10px" }}>
             {lang === "te" ? "టీకాల కాలక్రమం (Immunization Timeline)" : "Vaccine Doses Timeline"}
           </h3>
@@ -181,7 +187,7 @@ export function ChildImmunization({ onBack, lang = "en" }) {
 
                   <div style={{ display: "flex", gap: "8px", marginTop: "10px", paddingTop: "8px", borderTop: "1px solid var(--border)" }}>
                     <button
-                      onClick={() => handleToggleDose(activeChild.childId, dose.id, dose.status)}
+                      onClick={() => handleToggleDose(activeChild, dose)}
                       className="btn-outline"
                       style={{
                         flex: 1,
@@ -214,3 +220,4 @@ export function ChildImmunization({ onBack, lang = "en" }) {
 }
 
 export default ChildImmunization;
+
