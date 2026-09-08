@@ -384,7 +384,7 @@ function App() {
         {screen === "about" ? (
           <AboutApp onBack={() => setScreen("home")} lang={lang} />
         ) : mode === "citizen" ? (
-          <CitizenHome lang={lang} t={t} />
+          <CitizenHome lang={lang} t={t} userLocation={userLocation} />
         ) : (
           renderAshaScreen()
         )}
