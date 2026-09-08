@@ -147,9 +147,16 @@ export function BloodSearch({ onBack, lang = "en" }) {
             </div>
             <div>
               <label>Village / Area</label>
-              <select value={newDonorVillage} onChange={(e) => setNewDonorVillage(e.target.value)}>
-                {villages.map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
+              <input
+                type="text"
+                list="donor-village-options"
+                placeholder="Type village name"
+                value={newDonorVillage}
+                onChange={(e) => setNewDonorVillage(e.target.value)}
+              />
+              <datalist id="donor-village-options">
+                {villages.map(v => <option key={v} value={v} />)}
+              </datalist>
             </div>
           </div>
           <div style={{ marginBottom: "12px" }}>
