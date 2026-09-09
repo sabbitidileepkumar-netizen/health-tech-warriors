@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { getLocal, addMedicineReminder } from "./dataStore";
+import { sendSms } from "./smsHelper";
 
 export function MedicineReminders({ onBack, lang = "en" }) {
   const [reminders, setReminders] = useState([]);
@@ -10,6 +11,7 @@ export function MedicineReminders({ onBack, lang = "en" }) {
   const [timing, setTiming] = useState("Morning (8:00 AM) & Night (8:00 PM)");
   const [purpose, setPurpose] = useState("");
   const [smsNotification, setSmsNotification] = useState(null);
+  const [sendingId, setSendingId] = useState(null);
 
   useEffect(() => {
     setReminders(getLocal("medicine_reminders"));
@@ -33,10 +35,17 @@ export function MedicineReminders({ onBack, lang = "en" }) {
     setPurpose("");
   };
 
-  const triggerSmsSim = (item) => {
+  const triggerSmsSim = async (item) => {
+    const message = `CareLink Health Alert: Namaste ${item.patientName}, it's time for your ${item.medicine}. Take with warm water.`;
+    setSendingId(item.id);
+
+    const result = await sendSms(item.phone, message);
+
+    setSendingId(null);
     setSmsNotification({
       phone: item.phone,
-      msg: `CareLink Health Alert: Namaste ${item.patientName}, it's time for your ${item.medicine}. Take with warm water.`
+      msg: message,
+      success: result.success
     });
     setTimeout(() => {
       setSmsNotification(null);
@@ -63,9 +72,14 @@ export function MedicineReminders({ onBack, lang = "en" }) {
       </div>
 
       {smsNotification && (
-        <div style={{ background: "#F0FDF4", border: "1.5px solid #86EFAC", padding: "12px", borderRadius: "12px", marginBottom: "16px", boxShadow: "0 4px 10px rgba(0,0,0,0.08)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#166534", fontWeight: "bold" }}>
-            <span>📲</span> Simulated SMS Dispatched to {smsNotification.phone}!
+        <div style={{
+          background: smsNotification.success ? "#F0FDF4" : "#FEF2F2",
+          border: smsNotification.success ? "1.5px solid #86EFAC" : "1.5px solid #FCA5A5",
+          padding: "12px", borderRadius: "12px", marginBottom: "16px", boxShadow: "0 4px 10px rgba(0,0,0,0.08)"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: smsNotification.success ? "#166534" : "#991B1B", fontWeight: "bold" }}>
+            <span>{smsNotification.success ? "📲" : "⚠️"}</span>
+            {smsNotification.success ? `SMS sent to ${smsNotification.phone}!` : `Could not send SMS (offline or error)`}
           </div>
           <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#1E293B", fontStyle: "italic", background: "white", padding: "6px 8px", borderRadius: "6px" }}>
             "{smsNotification.msg}"
@@ -128,16 +142,18 @@ export function MedicineReminders({ onBack, lang = "en" }) {
               </div>
               <button
                 onClick={() => triggerSmsSim(r)}
+                disabled={sendingId === r.id}
                 style={{
                   background: "#EBF3FC",
                   color: "#0F6CBD",
                   border: "1px solid #BFDBFE",
                   padding: "6px 10px",
                   borderRadius: "8px",
-                  fontSize: "12px"
+                  fontSize: "12px",
+                  opacity: sendingId === r.id ? 0.6 : 1
                 }}
               >
-                📲 Send SMS Now
+                {sendingId === r.id ? "Sending..." : "📲 Send SMS Now"}
               </button>
             </div>
           </div>
