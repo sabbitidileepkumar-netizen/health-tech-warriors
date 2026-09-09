@@ -59,6 +59,16 @@ export function subscribeToCollection(collectionName, callback) {
     const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const existingLocal = getLocal(collectionName);
+
+      // Safety net: if Firestore comes back empty while offline/from cache,
+      // but we already have good local data, keep the local data instead
+      // of wiping it out.
+      if (items.length === 0 && existingLocal.length > 0 && snapshot.metadata.fromCache) {
+        callback(existingLocal);
+        return;
+      }
+
       saveLocal(collectionName, items);
       callback(items);
     }, (error) => {
