@@ -14,8 +14,8 @@ function Referral({ onBack, defaultPatient, lang = "en" }) {
   const [patients, setPatients] = useState([]);
   const [patientName, setPatientName] = useState(defaultPatient ? defaultPatient.name : "");
   const [facility, setFacility] = useState(facilities[0]);
-  const [reason, setReason] = useState("");
-  const [needAmbulance, setNeedAmbulance] = useState(false);
+  const [reason, setReason] = useState(defaultPatient?.reason || "");
+  const [needAmbulance, setNeedAmbulance] = useState(defaultPatient?.needAmbulance || false);
   const [referrals, setReferrals] = useState([]);
 
   useEffect(() => {

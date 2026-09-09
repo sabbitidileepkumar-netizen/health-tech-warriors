@@ -30,6 +30,7 @@ function App() {
   const [screen, setScreen] = useState("home");
   const [isOnline, setIsOnline] = useState(true);
   const [referralPatient, setReferralPatient] = useState(null);
+  const [triagePatient, setTriagePatient] = useState(null);
 
   const [ashaAuth, setAshaAuth] = useState(null);
 
@@ -114,7 +115,8 @@ function App() {
     setScreen("referral");
   };
 
-  const handleNavigateToTriage = (_patient) => {
+  const handleNavigateToTriage = (patient) => {
+    setTriagePatient(patient);
     setScreen("triage");
   };
 
@@ -165,8 +167,12 @@ function App() {
     if (screen === "triage") {
       return (
         <Triage
-          onBack={() => setScreen("home")}
+          onBack={() => {
+            setTriagePatient(null);
+            setScreen("home");
+          }}
           onNavigateToReferral={handleNavigateToReferral}
+          defaultPatient={triagePatient}
           t={t}
           lang={lang}
         />
