@@ -295,7 +295,7 @@ export function HospitalFinder({ onBack, lang = "en" }) {
                     </p>
                   </div>
                   {h.phone ? (
-                    
+                    <a
                       href={"tel:" + h.phone}
                       style={{
                         background: "#0D9488",
