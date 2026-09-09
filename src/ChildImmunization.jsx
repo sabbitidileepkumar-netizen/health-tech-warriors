@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { subscribeToChildVaccines, updateChildDoseStatusFirestore } from "./dataStore";
+import { sendSms } from "./smsHelper";
 
 export function ChildImmunization({ onBack, lang = "en" }) {
   const [children, setChildren] = useState([]);
   const [selectedChildId, setSelectedChildId] = useState("");
   const [smsAlert, setSmsAlert] = useState(null);
+  const [sendingDoseId, setSendingDoseId] = useState(null);
 
   useEffect(() => {
     const unsub = subscribeToChildVaccines((list) => {
@@ -27,13 +29,16 @@ export function ChildImmunization({ onBack, lang = "en" }) {
     }
   };
 
-  const handleSendReminder = (child, dose) => {
-    setSmsAlert({
-      phone: child.phone,
-      msg: lang === "te"
-        ? "కేర్ లింక్ ఆశా అలర్ట్: నమస్తే " + child.parentName + " గారు, మీ బిడ్డ " + child.childName + " కి " + dose.name + " టీకా సమయం అయింది. సమీప అంగన్‌వాడీకి తీసుకురండి."
-        : "CareLink ASHA Reminder: Namaste " + child.parentName + ", vaccine dose '" + dose.name + "' is due for " + child.childName + ". Please visit nearest Anganwadi centre."
-    });
+  const handleSendReminder = async (child, dose) => {
+    const message = lang === "te"
+      ? "కేర్ లింక్ ఆశా అలర్ట్: నమస్తే " + child.parentName + " గారు, మీ బిడ్డ " + child.childName + " కి " + dose.name + " టీకా సమయం అయింది. సమీప అంగన్‌వాడీకి తీసుకురండి."
+      : "CareLink ASHA Reminder: Namaste " + child.parentName + ", vaccine dose '" + dose.name + "' is due for " + child.childName + ". Please visit nearest Anganwadi centre.";
+
+    setSendingDoseId(dose.id);
+    const result = await sendSms(child.phone, message);
+    setSendingDoseId(null);
+
+    setSmsAlert({ phone: child.phone, msg: message, success: result.success });
     setTimeout(() => {
       setSmsAlert(null);
     }, 7000);
@@ -85,8 +90,14 @@ export function ChildImmunization({ onBack, lang = "en" }) {
       </div>
 
       {smsAlert && (
-        <div style={{ background: "#ECFDF5", border: "1.5px solid #10B981", borderRadius: "12px", padding: "12px", marginBottom: "16px" }}>
-          <strong style={{ color: "#065F46", fontSize: "13px" }}>📲 Simulated SMS Dispatched to {smsAlert.phone}:</strong>
+        <div style={{
+          background: smsAlert.success ? "#ECFDF5" : "#FEF2F2",
+          border: smsAlert.success ? "1.5px solid #10B981" : "1.5px solid #FCA5A5",
+          borderRadius: "12px", padding: "12px", marginBottom: "16px"
+        }}>
+          <strong style={{ color: smsAlert.success ? "#065F46" : "#991B1B", fontSize: "13px" }}>
+            {smsAlert.success ? `📲 SMS sent to ${smsAlert.phone}:` : `⚠️ Could not send SMS (offline or error):`}
+          </strong>
           <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#047857", fontStyle: "italic" }}>
             "{smsAlert.msg}"
           </p>
@@ -203,10 +214,11 @@ export function ChildImmunization({ onBack, lang = "en" }) {
                     <button
                       onClick={() => handleSendReminder(activeChild, dose)}
                       className="btn-outline"
-                      style={{ padding: "6px 12px", fontSize: "12px", color: "#0F6CBD", borderColor: "#0F6CBD" }}
+                      disabled={sendingDoseId === dose.id}
+                      style={{ padding: "6px 12px", fontSize: "12px", color: "#0F6CBD", borderColor: "#0F6CBD", opacity: sendingDoseId === dose.id ? 0.6 : 1 }}
                       title="Send SMS Reminder to Parent"
                     >
-                      📲 Send SMS
+                      {sendingDoseId === dose.id ? "Sending..." : "📲 Send SMS"}
                     </button>
                   </div>
                 </div>
@@ -220,4 +232,3 @@ export function ChildImmunization({ onBack, lang = "en" }) {
 }
 
 export default ChildImmunization;
-
