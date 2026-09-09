@@ -16,6 +16,65 @@ function getDistanceKm(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+// Offline fallback — real hospitals near SRKR Engineering College, Chinamiram, Bhimavaram.
+// Used when there's no internet or the live Overpass API is unreachable.
+const FALLBACK_HOSPITALS = [
+  {
+    id: "fallback-1",
+    name: "Bhimavaram Hospitals",
+    type: "Hospital",
+    address: "J.P. Road, Opposite SRKR Engineering College, Chinamiram",
+    phone: "08816221111",
+    lat: 16.5411,
+    lon: 81.4960
+  },
+  {
+    id: "fallback-2",
+    name: "Sree Subhadra Hospitals",
+    type: "Hospital",
+    address: "J.P. Road, Chinamiram, Bhimavaram",
+    phone: null,
+    lat: 16.5405,
+    lon: 81.4970
+  },
+  {
+    id: "fallback-3",
+    name: "Akshara Speciality Hospitals",
+    type: "Hospital",
+    address: "Juvvalapalem Road, Tammi Raju Nagar, Bhimavaram",
+    phone: "08816297197",
+    lat: 16.5395,
+    lon: 81.4985
+  },
+  {
+    id: "fallback-4",
+    name: "Mahatma Gandhi Cancer Hospital",
+    type: "Hospital",
+    address: "Juvvalapalem Road, Upparapadu, Pedamiram, Bhimavaram",
+    phone: "08816222208",
+    lat: 16.5390,
+    lon: 81.4990
+  },
+  {
+    id: "fallback-5",
+    name: "Gandhi Eye Hospital",
+    type: "Hospital",
+    address: "Juvvalapalem Road, Upparapadu, Pedamiram, Bhimavaram",
+    phone: "08816224570",
+    lat: 16.5388,
+    lon: 81.4992
+  },
+  {
+    id: "fallback-6",
+    name: "Varma Hospitals",
+    type: "Hospital",
+    address: "Juvvalapalem Road, Suryanarayanapuram, Bhimavaram",
+    phone: "08816227268",
+    lat: 16.5370,
+    lon: 81.5010
+  }
+];
+
 // Multiple mirrors — if one is down/rate-limited, we try the next
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
@@ -39,12 +98,17 @@ export function HospitalFinder({ onBack, lang = "en" }) {
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [usingFallback, setUsingFallback] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
 
   useEffect(() => {
+    if (!navigator.onLine) {
+      loadFallback(null);
+      return;
+    }
+
     if (!("geolocation" in navigator)) {
-      setError("Location access not supported on this device.");
-      setLoading(false);
+      loadFallback(null);
       return;
     }
 
@@ -56,12 +120,25 @@ export function HospitalFinder({ onBack, lang = "en" }) {
         fetchNearbyHospitals(lat, lon);
       },
       () => {
-        setError("Could not get your location. Please enable GPS/location permission and reload.");
-        setLoading(false);
+        loadFallback(null);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   }, []);
+
+  const loadFallback = (coords) => {
+    const refLat = coords ? coords.lat : FALLBACK_HOSPITALS[0].lat;
+    const refLon = coords ? coords.lon : FALLBACK_HOSPITALS[0].lon;
+    const withDistance = FALLBACK_HOSPITALS.map((h) => ({
+      ...h,
+      distanceKm: getDistanceKm(refLat, refLon, h.lat, h.lon)
+    })).sort((a, b) => a.distanceKm - b.distanceKm);
+
+    setHospitals(withDistance);
+    setUsingFallback(true);
+    setError("");
+    setLoading(false);
+  };
 
   const fetchNearbyHospitals = async (lat, lon) => {
     setLoading(true);
@@ -121,7 +198,13 @@ export function HospitalFinder({ onBack, lang = "en" }) {
           .sort((a, b) => a.distanceKm - b.distanceKm)
           .slice(0, 20);
 
+        if (results.length === 0) {
+          loadFallback({ lat, lon });
+          return;
+        }
+
         setHospitals(results);
+        setUsingFallback(false);
         setLoading(false);
         return; // success — stop trying other mirrors
       } catch (err) {
@@ -131,10 +214,9 @@ export function HospitalFinder({ onBack, lang = "en" }) {
       }
     }
 
-    // All mirrors failed
-    console.error("All Overpass mirrors failed. Last error:", lastErrorDetail);
-    setError("Could not load nearby hospitals right now. The map data service may be busy — please try again in a moment.");
-    setLoading(false);
+    // All mirrors failed — fall back to the known local list instead of an error screen
+    console.warn("All Overpass mirrors failed, using offline fallback list. Last error:", lastErrorDetail);
+    loadFallback({ lat, lon });
   };
 
   const filteredHospitals = hospitals.filter((h) =>
@@ -146,7 +228,9 @@ export function HospitalFinder({ onBack, lang = "en" }) {
     <div className="page-content">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <button className="btn-outline" onClick={onBack}>⬅️ Back</button>
-        <span className="badge" style={{ background: "#EBF3FC", color: "#0F6CBD" }}>Live GPS Search</span>
+        <span className="badge" style={{ background: "#EBF3FC", color: "#0F6CBD" }}>
+          {usingFallback ? "Offline List" : "Live GPS Search"}
+        </span>
       </div>
 
       <div style={{ background: "linear-gradient(135deg, #0F6CBD 0%, #0369A1 100%)", color: "white", padding: "18px", borderRadius: "16px", marginBottom: "16px" }}>
@@ -157,7 +241,9 @@ export function HospitalFinder({ onBack, lang = "en" }) {
               {lang === "te" ? "సమీప ఆసుపత్రులు" : "Nearby Hospitals & Clinics"}
             </h1>
             <p style={{ color: "#E0F2FE", margin: 0, fontSize: "13px" }}>
-              {lang === "te" ? "మీ ప్రస్తుత లొకేషన్ ఆధారంగా" : "Based on your real-time GPS location"}
+              {usingFallback
+                ? (lang === "te" ? "ఆఫ్‌లైన్ జాబితా చూపబడుతోంది" : "Showing offline hospital list for this area")
+                : (lang === "te" ? "మీ ప్రస్తుత లొకేషన్ ఆధారంగా" : "Based on your real-time GPS location")}
             </p>
           </div>
         </div>
@@ -169,13 +255,19 @@ export function HospitalFinder({ onBack, lang = "en" }) {
         </div>
       )}
 
+      {usingFallback && !loading && (
+        <div style={{ background: "#FEF3C7", color: "#92400E", padding: "10px 12px", borderRadius: "10px", fontSize: "12px", marginBottom: "14px", fontWeight: "600" }}>
+          📴 No internet or live map data — showing known hospitals near Chinamiram, Bhimavaram.
+        </div>
+      )}
+
       {error && (
         <div style={{ background: "#FEE2E2", color: "#991B1B", padding: "12px", borderRadius: "10px", fontSize: "13px", marginBottom: "14px" }}>
           ⚠️ {error}
         </div>
       )}
 
-      {!loading && !error && (
+      {!loading && (
         <>
           <input
             type="text"
@@ -203,7 +295,7 @@ export function HospitalFinder({ onBack, lang = "en" }) {
                     </p>
                   </div>
                   {h.phone ? (
-                    <a
+                    
                       href={"tel:" + h.phone}
                       style={{
                         background: "#0D9488",
