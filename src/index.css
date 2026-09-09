@@ -1,4 +1,4 @@
-﻿/* CareLink Design System - SIH 2026 */
+/* CareLink Design System - SIH 2026 */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap');
 
 :root {
@@ -429,4 +429,46 @@ button:active {
 
 input[list]::-webkit-calendar-picker-indicator {
   display: none !important;
+}
+
+/* Clinical Telemetry & Spin Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 640px) {
+  .hero-badge-desktop {
+    display: none !important;
+  }
+}
+
+@media (min-width: 480px) {
+  .telemetry-pleth {
+    display: block !important;
+  }
+}
+
+/* Polished Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }

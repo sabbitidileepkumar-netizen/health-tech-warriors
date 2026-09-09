@@ -49,10 +49,10 @@ export function PortalHub({ user, userProfile, _role, isGuest, lang, onSelectPor
       borderAccent: "#6366F1",
       highlight: true,
       features: [
-        lang === "te" ? "💊 డైనమిక్ మందుల స్టాక్ నిర్వహణ" : "💊 Dynamic Medicine & ASV Stock Control",
-        lang === "te" ? "👶 పోలియో చుక్కల తేదీల షెడ్యూలర్" : "👶 Polio Drops Campaign Date Scheduler",
-        lang === "te" ? "🗺️ జిల్లా ఆరోగ్య నిఘా & అంటువ్యాధుల సమీక్ష" : "🗺️ District Surveillance & Outbreak Review",
-        lang === "te" ? "👩‍⚕️ ఆశా వర్కర్ల టాస్కింగ్ & పర్యవేక్షణ" : "👩‍⚕️ ASHA Workforce Direct Dispatch"
+        lang === "te" ? "డైనమిక్ మందుల స్టాక్ నిర్వహణ" : "Dynamic Medicine & ASV Stock Control",
+        lang === "te" ? "పోలియో చుక్కల తేదీల షెడ్యూలర్" : "Polio Drops Campaign Date Scheduler",
+        lang === "te" ? "జిల్లా ఆరోగ్య నిఘా & అంటువ్యాధుల సమీక్ష" : "District Surveillance & Outbreak Review",
+        lang === "te" ? "ఆశా వర్కర్ల టాస్కింగ్ & పర్యవేక్షణ" : "ASHA Workforce Direct Dispatch"
       ]
     },
     {
