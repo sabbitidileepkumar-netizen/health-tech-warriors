@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { subscribeToChildVaccines, updateChildDoseStatusFirestore } from "./dataStore";
+import { subscribeToChildVaccines, updateChildDoseStatusFirestore, subscribeToCollection } from "./dataStore";
 import { sendSms } from "./smsHelper";
 
 export function ChildImmunization({ onBack, lang = "en" }) {
@@ -7,6 +7,7 @@ export function ChildImmunization({ onBack, lang = "en" }) {
   const [selectedChildId, setSelectedChildId] = useState("");
   const [smsAlert, setSmsAlert] = useState(null);
   const [sendingDoseId, setSendingDoseId] = useState(null);
+  const [activePolioDrive, setActivePolioDrive] = useState(null);
 
   useEffect(() => {
     const unsub = subscribeToChildVaccines((list) => {
@@ -15,7 +16,20 @@ export function ChildImmunization({ onBack, lang = "en" }) {
         setSelectedChildId(list[0].id);
       }
     });
-    return () => unsub();
+
+    const unsubSchedules = subscribeToCollection("schedules", (list) => {
+      const polio = list.find(
+        (s) =>
+          (s.isPolioDrive || s.category === "POLIO_CAMPAIGN" || s.title?.toLowerCase().includes("polio")) &&
+          s.status !== "CANCELLED"
+      );
+      if (polio) setActivePolioDrive(polio);
+    });
+
+    return () => {
+      unsub();
+      unsubSchedules();
+    };
   }, []);
 
   const activeChild = children.find((c) => c.id === selectedChildId);
@@ -76,14 +90,23 @@ export function ChildImmunization({ onBack, lang = "en" }) {
       <div style={{ background: "#EFF6FF", border: "1.5px solid #93C5FD", borderRadius: "14px", padding: "14px", marginBottom: "16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "28px" }}>📢</span>
-          <div>
-            <strong style={{ color: "#1D4ED8", fontSize: "14px" }}>
-              {lang === "te" ? "రాష్ట్ర పల్స్ పోలియో ప్రత్యేక డ్రైవ్ 2026" : "Upcoming Pulse Polio Special Campaign 2026"}
-            </strong>
-            <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#1E40AF" }}>
-              {lang === "te"
-                ? "తణుకు, రిలంగి, అత్తిలి పరిధిలోని 0-5 సంవత్సరాల పిల్లలందరికీ బూత్‌లలో చుక్కల మందు వేయబడును."
-                : "Mandatory oral polio drops for all 0-5 yr children across Tanuku, Relangi & Attili Anganwadis."}
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "4px" }}>
+              <strong style={{ color: "#1D4ED8", fontSize: "14px" }}>
+                {activePolioDrive?.title || (lang === "te" ? "రాష్ట్ర పల్స్ పోలియో ప్రత్యేక డ్రైవ్ 2026" : "Upcoming Pulse Polio Special Campaign 2026")}
+              </strong>
+              {activePolioDrive?.date && (
+                <span className="badge" style={{ background: "#DBEAFE", color: "#1D4ED8", fontWeight: "700" }}>
+                  📅 {activePolioDrive.date}
+                </span>
+              )}
+            </div>
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#1E40AF" }}>
+              {activePolioDrive
+                ? `📍 Booth: ${activePolioDrive.boothVenue || activePolioDrive.village} • ⏰ ${activePolioDrive.time || "08:00 AM - 04:00 PM"} (Assigned ASHA: ${activePolioDrive.assignedAshaName || "Local Worker"})`
+                : (lang === "te"
+                  ? "తణుకు, రిలంగి, అత్తిలి పరిధిలోని 0-5 సంవత్సరాల పిల్లలందరికీ బూత్‌లలో చుక్కల మందు వేయబడును."
+                  : "Mandatory oral polio drops for all 0-5 yr children across Tanuku, Relangi & Attili Anganwadis.")}
             </p>
           </div>
         </div>

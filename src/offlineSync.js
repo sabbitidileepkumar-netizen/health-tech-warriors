@@ -1,23 +1,51 @@
 // Offline-first sync queue for CareLink
 // Queues writes made while offline and syncs them to Firestore when back online.
 
-import { db } from './firebase';
+import { db } from './firebase.js';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { getLocal, saveLocal } from './dataStore';
+import { getLocal, saveLocal } from './dataStore.js';
 
 const QUEUE_KEY = 'carelink_pending_sync';
 
+let currentSyncStatus = typeof navigator !== 'undefined' && navigator.onLine ? 'SYNCED' : 'OFFLINE';
+const statusListeners = new Set();
+
+function notifyStatus() {
+  const pending = getPendingCount();
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    currentSyncStatus = 'OFFLINE';
+  } else if (pending > 0 && currentSyncStatus !== 'SYNC_FAILED') {
+    currentSyncStatus = 'SYNCING';
+  } else if (pending === 0) {
+    currentSyncStatus = 'SYNCED';
+  }
+  statusListeners.forEach((fn) => fn(currentSyncStatus, pending));
+}
+
+export function subscribeSyncStatus(callback) {
+  statusListeners.add(callback);
+  callback(currentSyncStatus, getPendingCount());
+  return () => statusListeners.delete(callback);
+}
+
+export function getSyncStatus() {
+  return { status: currentSyncStatus, pendingCount: getPendingCount() };
+}
+
 function getQueue() {
   try {
-    const raw = localStorage.getItem(QUEUE_KEY);
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(QUEUE_KEY) : null;
     return raw ? JSON.parse(raw) : [];
-  } catch (e) {
+  } catch (_e) {
     return [];
   }
 }
 
 function saveQueue(queue) {
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  }
+  notifyStatus();
 }
 
 // Use this instead of calling addDoc directly from any form that must work offline.
@@ -29,7 +57,7 @@ export async function saveWithOfflineSupport(collectionName, data, localListKey)
   const currentList = getLocal(localListKey);
   saveLocal(localListKey, [optimisticRecord, ...currentList]);
 
-  if (!navigator.onLine) {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
     queueForLater(collectionName, data, tempId, localListKey);
     return optimisticRecord;
   }
@@ -40,6 +68,7 @@ export async function saveWithOfflineSupport(collectionName, data, localListKey)
       createdAt: serverTimestamp()
     });
     replaceOptimisticRecord(localListKey, tempId, { id: docRef.id, ...data });
+    notifyStatus();
     return { id: docRef.id, ...data };
   } catch (err) {
     console.warn('Write failed, queueing for later sync:', err.message);
@@ -56,14 +85,20 @@ function queueForLater(collectionName, data, tempId, localListKey) {
 
 function replaceOptimisticRecord(localListKey, tempId, realRecord) {
   const list = getLocal(localListKey);
-  const updated = list.map(item => item.id === tempId ? { ...realRecord, _pendingSync: false } : item);
+  const updated = list.map((item) => (item.id === tempId ? { ...realRecord, _pendingSync: false } : item));
   saveLocal(localListKey, updated);
 }
 
-// Call this once when the app starts — it retries the queue automatically
-// whenever the device reconnects to the internet.
+// Retries the queue automatically whenever the device reconnects
 export function initSyncListener() {
-  window.addEventListener('online', syncPendingQueue);
+  if (typeof window === 'undefined') return;
+  window.addEventListener('online', () => {
+    notifyStatus();
+    syncPendingQueue();
+  });
+  window.addEventListener('offline', () => {
+    notifyStatus();
+  });
   if (navigator.onLine) {
     syncPendingQueue();
   }
@@ -71,9 +106,17 @@ export function initSyncListener() {
 
 export async function syncPendingQueue() {
   const queue = getQueue();
-  if (queue.length === 0) return;
+  if (queue.length === 0) {
+    notifyStatus();
+    return;
+  }
+
+  currentSyncStatus = 'SYNCING';
+  notifyStatus();
 
   const remaining = [];
+  let hadFailure = false;
+
   for (const item of queue) {
     try {
       const docRef = await addDoc(collection(db, item.collectionName), {
@@ -84,11 +127,15 @@ export async function syncPendingQueue() {
     } catch (err) {
       console.warn('Still cannot sync, will retry later:', err.message);
       remaining.push(item);
+      hadFailure = true;
     }
   }
+
   saveQueue(remaining);
+  currentSyncStatus = hadFailure ? 'SYNC_FAILED' : 'SYNCED';
+  notifyStatus();
 }
 
 export function getPendingCount() {
   return getQueue().length;
-  }
+}

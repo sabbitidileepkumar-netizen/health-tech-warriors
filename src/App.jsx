@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { translations } from "./translations";
 import { initStore } from "./dataStore";
+import { initSyncListener, subscribeSyncStatus } from "./offlineSync";
+import { AuthProvider, useAuth } from "./AuthContext";
+import { AuthScreen } from "./AuthScreen";
+import { LanguageSelectScreen } from "./LanguageSelectScreen";
+import { PortalHub } from "./PortalHub";
 
 import { CitizenHome } from "./CitizenHome";
+import { AuthorityDashboard } from "./AuthorityDashboard";
 import HomeDashboard from "./HomeDashboard";
 import PatientRegistration from "./PatientRegistration";
 import Triage from "./Triage";
@@ -13,8 +19,7 @@ import ReportsStats from "./ReportsStats";
 import { OutbreakMonitor } from "./OutbreakMonitor";
 import { AboutApp } from "./AboutApp";
 
-// New Modules
-import { Login } from "./Login";
+// Modules
 import { AllMembers } from "./AllMembers";
 import { VenomousAnimalTracker } from "./VenomousAnimalTracker";
 import { WeatherSeasonalAlerts } from "./WeatherSeasonalAlerts";
@@ -23,16 +28,50 @@ import { SupplyIntelligence } from "./SupplyIntelligence";
 import { AIAssistant } from "./AIAssistant";
 import HospitalFinder from "./HospitalFinder";
 import ChildVaccineTracker from "./ChildVaccineTracker";
+import { AshaScheduleTasks } from "./AshaScheduleTasks";
 
-function App() {
-  const [lang, setLang] = useState("te");
-  const [mode, setMode] = useState("citizen");
+function AppContent() {
+  const { user, userProfile, role, isGuest, logout } = useAuth();
+
+  const [lang, setLang] = useState(() => {
+    return typeof localStorage !== "undefined" ? localStorage.getItem("carelink_lang") || "te" : "te";
+  });
+
+  // Track language selection confirmation (Screen 2 from sketch)
+  const [hasSelectedLanguage, setHasSelectedLanguage] = useState(() => {
+    return typeof sessionStorage !== "undefined" ? Boolean(sessionStorage.getItem("carelink_lang_confirmed")) : false;
+  });
+
+  // Track app view: "language" | "hub" | "portal"
+  const [appView, setAppView] = useState(() => {
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("carelink_lang_confirmed")) {
+      return "hub";
+    }
+    return "language";
+  });
+
+  // Track active portal: "citizen" | "asha" | "authority" | "about"
+  const [activePortal, setActivePortal] = useState(() => {
+    if (role === "HIGHER_AUTHORITY") return "authority";
+    if (role === "ASHA_WORKER") return "asha";
+    return "citizen";
+  });
+
+  useEffect(() => {
+    if (role === "HIGHER_AUTHORITY") {
+      setActivePortal("authority");
+    } else if (role === "ASHA_WORKER") {
+      setActivePortal("asha");
+    } else if (role === "CITIZEN" || isGuest) {
+      setActivePortal("citizen");
+    }
+  }, [role, isGuest]);
+
   const [screen, setScreen] = useState("home");
-  const [isOnline, setIsOnline] = useState(true);
+  const [syncStatus, setSyncStatus] = useState("SYNCED");
+  const [pendingCount, setPendingCount] = useState(0);
   const [referralPatient, setReferralPatient] = useState(null);
   const [triagePatient, setTriagePatient] = useState(null);
-
-  const [ashaAuth, setAshaAuth] = useState(null);
 
   const [userLocation, setUserLocation] = useState({
     village: "Detecting location...",
@@ -42,16 +81,14 @@ function App() {
 
   useEffect(() => {
     initStore();
+    initSyncListener();
 
-    const storedAuth = localStorage.getItem("carelink_asha_auth");
-    if (storedAuth) {
-      try {
-        setAshaAuth(JSON.parse(storedAuth));
-      } catch (_e) {}
-    }
+    const unsubSync = subscribeSyncStatus((st, count) => {
+      setSyncStatus(st);
+      setPendingCount(count);
+    });
 
-    // Looks up a real place name for given coordinates using OpenStreetMap's
-    // free Nominatim reverse-geocoding API (no key required).
+    // Reverse geocode user coordinates
     const reverseGeocode = async (lat, lon) => {
       try {
         const res = await fetch(
@@ -67,21 +104,18 @@ function App() {
           addr.city ||
           addr.county ||
           data.display_name ||
-          "Unknown Location"
+          "Relangi, West Godavari"
         );
       } catch (_e) {
-        return "Location name unavailable";
+        return "Relangi, West Godavari";
       }
     };
 
-    if ("geolocation" in navigator) {
+    if (typeof navigator !== "undefined" && "geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-
-          // Show coordinates immediately, then fill in the real place name
-          // once the reverse-geocoding lookup finishes.
           setUserLocation({
             village: "Detecting location...",
             coords: lat.toFixed(3) + "° N, " + lon.toFixed(3) + "° E",
@@ -89,7 +123,6 @@ function App() {
           });
 
           const placeName = await reverseGeocode(lat, lon);
-
           setUserLocation({
             village: placeName,
             coords: lat.toFixed(3) + "° N, " + lon.toFixed(3) + "° E",
@@ -98,15 +131,24 @@ function App() {
         },
         () => {
           setUserLocation({
-            village: "Location Unavailable",
-            coords: "—",
-            accuracy: "GPS Permission Denied"
+            village: "Relangi (Default)",
+            coords: "16.704° N, 81.630° E",
+            accuracy: "GPS Default Mode"
           });
         },
         { timeout: 5000 }
       );
     }
+
+    return () => unsubSync();
   }, []);
+
+  const handleLangChange = (newLang) => {
+    setLang(newLang);
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("carelink_lang", newLang);
+    }
+  };
 
   const t = translations[lang] || translations.te || translations.en;
 
@@ -120,36 +162,86 @@ function App() {
     setScreen("triage");
   };
 
-  const handleAshaLoginSuccess = (authData) => {
-    setAshaAuth(authData);
-    setMode("asha");
-    setScreen("home");
+  const handleLogout = async () => {
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.removeItem("carelink_lang_confirmed");
+    }
+    setHasSelectedLanguage(false);
+    setAppView("language");
+    await logout();
   };
 
-  const handleAshaLogout = () => {
-    localStorage.removeItem("carelink_asha_auth");
-    setAshaAuth(null);
-    setMode("citizen");
-    setScreen("home");
-  };
+  // Screen 1 from sketch: Authentication (Email/Pass, Google, Guest, Demo)
+  if (!user && !isGuest) {
+    return <AuthScreen lang={lang} setLang={handleLangChange} t={t} />;
+  }
 
-  const renderAshaScreen = () => {
-    if (!ashaAuth) {
-      return (
-        <Login
-          onLoginSuccess={handleAshaLoginSuccess}
-          onCancel={() => {
-            setMode("citizen");
+  // Screen 2 from sketch: Select Languages
+  if (!hasSelectedLanguage || appView === "language") {
+    return (
+      <LanguageSelectScreen
+        currentLang={lang}
+        onSelectLang={handleLangChange}
+        onContinue={(chosenLang) => {
+          handleLangChange(chosenLang);
+          setHasSelectedLanguage(true);
+          if (typeof sessionStorage !== "undefined") {
+            sessionStorage.setItem("carelink_lang_confirmed", "true");
+          }
+          setAppView("hub");
+        }}
+      />
+    );
+  }
+
+  // Screen 3 from sketch: Portals Hub (2x2 Grid)
+  if (appView === "hub") {
+    return (
+      <PortalHub
+        user={user}
+        userProfile={userProfile}
+        role={role}
+        isGuest={isGuest}
+        lang={lang}
+        t={t}
+        onSelectPortal={(portalId) => {
+          if (portalId === "about") {
+            setScreen("about");
+          } else {
             setScreen("home");
-          }}
+          }
+          setActivePortal(portalId);
+          setAppView("portal");
+        }}
+        onOpenLanguageSelect={() => {
+          setAppView("language");
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // Render ASHA Screen
+  const renderAshaScreen = () => {
+    if (screen === "home") {
+      return (
+        <HomeDashboard
+          onNavigate={(k) => setScreen(k)}
           t={t}
           lang={lang}
+          ashaProfile={userProfile}
         />
       );
     }
-
-    if (screen === "home") {
-      return <HomeDashboard onNavigate={(k) => setScreen(k)} t={t} lang={lang} />;
+    if (screen === "schedules") {
+      return (
+        <AshaScheduleTasks
+          onBack={() => setScreen("home")}
+          currentWorkerId={userProfile?.workerId || "ASHA-001"}
+          currentVillage={userProfile?.village || "Relangi"}
+          lang={lang}
+        />
+      );
     }
     if (screen === "register") {
       return <PatientRegistration onBack={() => setScreen("home")} t={t} lang={lang} />;
@@ -241,15 +333,86 @@ function App() {
     );
   };
 
+  const getSyncBadge = () => {
+    switch (syncStatus) {
+      case "SYNCED":
+        return (
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: "600",
+              padding: "4px 8px",
+              borderRadius: "12px",
+              backgroundColor: "#ECFDF5",
+              color: "#065F46",
+              border: "1px solid #A7F3D0"
+            }}
+          >
+            {t.syncSynced || "🟢 SYNCED"}
+          </span>
+        );
+      case "SYNCING":
+        return (
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: "600",
+              padding: "4px 8px",
+              borderRadius: "12px",
+              backgroundColor: "#EFF6FF",
+              color: "#1D4ED8",
+              border: "1px solid #BFDBFE"
+            }}
+          >
+            {t.syncSyncing || "🔄 SYNCING"} ({pendingCount})
+          </span>
+        );
+      case "OFFLINE":
+        return (
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: "600",
+              padding: "4px 8px",
+              borderRadius: "12px",
+              backgroundColor: "#FEF3C7",
+              color: "#92400E",
+              border: "1px solid #FDE68A"
+            }}
+          >
+            {t.syncOffline || "📶 OFFLINE"} {pendingCount > 0 ? `(${pendingCount})` : ""}
+          </span>
+        );
+      case "SYNC_FAILED":
+        return (
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: "600",
+              padding: "4px 8px",
+              borderRadius: "12px",
+              backgroundColor: "#FEE2E2",
+              color: "#991B1B",
+              border: "1px solid #FECACA"
+            }}
+          >
+            {t.syncFailed || "⚠️ SYNC FAILED"}
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* CareLink Header */}
       <header className="header-bar">
         <div
           className="brand-badge"
-          onClick={() => {
-            setScreen("home");
-          }}
+          onClick={() => setAppView("hub")}
           style={{ cursor: "pointer" }}
+          title="Return to Portals Hub"
         >
           <div className="brand-logo">CL</div>
           <div>
@@ -259,9 +422,32 @@ function App() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          {/* Portals Hub Quick Access Button */}
+          <button
+            onClick={() => setAppView("hub")}
+            style={{
+              background: "#EBF3FC",
+              border: "1.5px solid #0F6CBD",
+              color: "#0F6CBD",
+              padding: "4px 10px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: "700",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px"
+            }}
+            title="Return to the 4 Portals Hub"
+          >
+            <span>🏠</span>
+            <span>{lang === "te" ? "పోర్టల్స్ హబ్" : "Portals Hub"}</span>
+          </button>
+
+          {/* Language Switcher */}
           <select
             value={lang}
-            onChange={(e) => setLang(e.target.value)}
+            onChange={(e) => handleLangChange(e.target.value)}
             style={{
               padding: "4px 6px",
               fontSize: "12px",
@@ -279,17 +465,40 @@ function App() {
             <option value="mr">मराठी (Marathi)</option>
           </select>
 
+          {/* About App button */}
           <button
-            onClick={() => setScreen("about")}
+            onClick={() => {
+              setActivePortal("about");
+              setScreen("about");
+            }}
             className="btn-outline"
             style={{ padding: "4px 8px", fontSize: "14px" }}
             title="About CareLink"
           >
             ℹ️
           </button>
+
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            style={{
+              background: "none",
+              border: "1px solid #CBD5E1",
+              padding: "4px 8px",
+              borderRadius: "8px",
+              fontSize: "11px",
+              color: "#64748B",
+              cursor: "pointer",
+              fontWeight: "600"
+            }}
+            title="Sign out of CareLink"
+          >
+            🔒 {t.logout || "Logout"}
+          </button>
         </div>
       </header>
 
+      {/* Geolocation Bar */}
       <div
         style={{
           background: "#F8FAFC",
@@ -309,97 +518,149 @@ function App() {
           </span>
         </div>
 
-        <span
-          className="badge badge-low"
-          style={{ fontSize: "10px", padding: "2px 6px" }}
-        >
-          🛰️ {userLocation.accuracy}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          {getSyncBadge()}
+        </div>
       </div>
 
-      <div style={{ background: "white", borderBottom: "1px solid var(--border)", padding: "8px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div className="mode-toggle">
-          <button
-            className={"mode-btn " + (mode === "citizen" ? "active" : "")}
-            onClick={() => {
-              setMode("citizen");
-              setScreen("home");
+      {/* Role Confirmation Sub-Bar */}
+      <div
+        style={{
+          background: "white",
+          borderBottom: "1px solid var(--border)",
+          padding: "8px 16px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between"
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span
+            className="badge"
+            style={{
+              background:
+                activePortal === "authority"
+                  ? "#EEF2FF"
+                  : activePortal === "asha"
+                  ? "#E6F7F5"
+                  : activePortal === "about"
+                  ? "#F5F3FF"
+                  : "#EBF3FC",
+              color:
+                activePortal === "authority"
+                  ? "#4F46E5"
+                  : activePortal === "asha"
+                  ? "#0D9488"
+                  : activePortal === "about"
+                  ? "#7C3AED"
+                  : "#0F6CBD",
+              fontWeight: "700"
             }}
           >
-            👤 Citizen
-          </button>
-          <button
-            className={"mode-btn " + (mode === "asha" ? "active" : "")}
-            onClick={() => {
-              setMode("asha");
-              setScreen("home");
-            }}
-          >
-            👩‍⚕️ ASHA Worker
-          </button>
+            {activePortal === "authority"
+              ? "🏛️ Higher Authority Portal"
+              : activePortal === "asha"
+              ? "👩‍⚕️ ASHA Worker Portal"
+              : activePortal === "about"
+              ? "ℹ️ About CareLink"
+              : isGuest
+              ? "🌐 Guest View"
+              : "👤 Citizen Portal"}
+          </span>
+          <span style={{ fontSize: "12px", color: "#64748B" }}>
+            {userProfile?.name || user?.email}
+          </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {mode === "asha" && ashaAuth && (
-            <button
-              onClick={handleAshaLogout}
-              style={{
-                background: "none",
-                border: "1px solid #CBD5E1",
-                padding: "4px 8px",
-                borderRadius: "10px",
-                fontSize: "11px",
-                color: "#64748B",
-                cursor: "pointer"
-              }}
-              title="Logout ASHA session"
-            >
-              🔒 Logout
-            </button>
-          )}
-
-          <div
-            onClick={() => setIsOnline(!isOnline)}
+          <span style={{ fontSize: "11px", color: "#94A3B8" }}>
+            Village: <strong>{userProfile?.village || "Relangi"}</strong>
+          </span>
+          <button
+            onClick={() => setAppView("hub")}
             style={{
-              cursor: "pointer",
+              background: "#F1F5F9",
+              border: "1px solid #CBD5E1",
+              borderRadius: "6px",
+              padding: "2px 8px",
+              color: "#0F6CBD",
               fontSize: "11px",
-              fontWeight: "600",
-              padding: "4px 8px",
-              borderRadius: "12px",
-              backgroundColor: isOnline ? "#ECFDF5" : "#FEF3C7",
-              color: isOnline ? "#065F46" : "#92400E",
-              border: "1px solid " + (isOnline ? "#A7F3D0" : "#FDE68A"),
-              display: "flex",
-              alignItems: "center",
-              gap: "4px"
+              fontWeight: "700",
+              cursor: "pointer"
             }}
-            title="Click to simulate Online / Offline mode"
+            title="Switch to another portal"
           >
-            <span>{isOnline ? "🟢 Online" : "📶 Offline Mode"}</span>
-          </div>
+            ⇄ Switch Portal
+          </button>
         </div>
       </div>
 
-      {!isOnline && (
+      {/* Offline Status Warning Banner */}
+      {syncStatus === "OFFLINE" && (
         <div className="status-banner status-offline">
           <span>📶 Operating in Offline Local-First Mode (Auto-cached on device)</span>
         </div>
       )}
 
+      {/* Main Content Area Protected by RBAC & Portals */}
       <main style={{ flex: 1 }}>
-        {screen === "about" ? (
-          <AboutApp onBack={() => setScreen("home")} lang={lang} />
-        ) : mode === "citizen" ? (
-          <CitizenHome lang={lang} t={t} userLocation={userLocation} />
-        ) : (
+        {activePortal === "about" || screen === "about" ? (
+          <AboutApp onBack={() => setAppView("hub")} lang={lang} />
+        ) : activePortal === "authority" ? (
+          <AuthorityDashboard
+            userProfile={userProfile}
+            onLogout={handleLogout}
+            onSwitchPortal={() => setAppView("hub")}
+            lang={lang}
+            t={t}
+          />
+        ) : activePortal === "asha" ? (
           renderAshaScreen()
+        ) : (
+          <CitizenHome
+            lang={lang}
+            t={t}
+            userLocation={userLocation}
+            userProfile={userProfile}
+            isGuest={isGuest}
+          />
         )}
       </main>
 
-      <footer className="no-print" style={{ background: "white", borderTop: "1px solid var(--border)", padding: "10px 16px", textAlign: "center", fontSize: "11px", color: "#94A3B8" }}>
-        CareLink Rural Health Lifeline &bull; West Godavari (Relangi &bull; Tanuku &bull; Attili &bull; K.S. Gattu) &bull; Mode: <strong>{mode === "citizen" ? "Citizen View" : ashaAuth ? "ASHA: " + ashaAuth.name : "ASHA Worker Portal"}</strong>
+      {/* Footer */}
+      <footer
+        className="no-print"
+        style={{
+          background: "white",
+          borderTop: "1px solid var(--border)",
+          padding: "10px 16px",
+          textAlign: "center",
+          fontSize: "11px",
+          color: "#94A3B8"
+        }}
+      >
+        CareLink Rural Health Lifeline &bull; West Godavari (Relangi &bull; Tanuku &bull; Attili &bull; K.S. Gattu) &bull; Mode:{" "}
+        <strong>
+          {activePortal === "authority"
+            ? "Public Health Command (DM&HO)"
+            : activePortal === "asha"
+            ? "ASHA Portal: " + (userProfile?.name || "Field Worker")
+            : activePortal === "about"
+            ? "App Documentation"
+            : isGuest
+            ? "Public Guest View"
+            : "Citizen View: " + (userProfile?.name || "Verified Citizen")}
+        </strong>
       </footer>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
