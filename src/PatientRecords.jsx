@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
 import { subscribeToCollection } from "./dataStore";
+import { buildPatientBundle, downloadJson } from "./fhirExport";
 
 function PatientRecords({ onBack }) {
   const [patients, setPatients] = useState([]);
@@ -64,6 +65,12 @@ function PatientRecords({ onBack }) {
           <button className="btn-primary" onClick={() => window.print()} style={{ width: "auto", padding: "8px 14px", fontSize: "13px" }}>
             🖨️ Print / Export Record
           </button>
+          <button className="btn-outline" onClick={() => downloadJson(
+            `carelink-fhir-${selectedPatient.id || "record"}.json`,
+            buildPatientBundle({ patient: selectedPatient, triage: history, referrals: patientReferrals, appointments: patientAppointments, diagnostics: patientDiagnostics, medicines: meds })
+          )} style={{ width: "auto", padding: "8px 14px", fontSize: "13px" }}>
+            ⇩ FHIR JSON
+          </button>
         </div>
 
         <div className="care-card" style={{ border: "2px solid #0F6CBD" }}>
@@ -116,6 +123,7 @@ function PatientRecords({ onBack }) {
           <h3 style={{ borderTop: "1px solid var(--border)", paddingTop: "12px", marginBottom: "8px" }}>
             📅 Care Coordination
           </h3>
+          <p style={{ fontSize: "11px", color: "#64748B", marginTop: "-4px" }}>Export uses a FHIR R4-compatible bundle for interoperability demonstrations; it is not a live ABHA connection.</p>
           {patientAppointments.length + patientConsultations.length + patientDiagnostics.length + patientReferrals.length === 0 ? (
             <p style={{ fontSize: "13px", color: "#94A3B8" }}>No appointments, remote consultations, tests, or referrals recorded yet.</p>
           ) : (

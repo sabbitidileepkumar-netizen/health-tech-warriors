@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getLocal, addMedicineReminder } from "./dataStore";
 import { sendSms } from "./smsHelper";
 
-export function MedicineReminders({ onBack, lang = "en" }) {
+export function MedicineReminders({ onBack, lang = "en", userProfile, readOnly = false }) {
   const [reminders, setReminders] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [patientName, setPatientName] = useState("");
@@ -14,8 +14,11 @@ export function MedicineReminders({ onBack, lang = "en" }) {
   const [sendingId, setSendingId] = useState(null);
 
   useEffect(() => {
-    setReminders(getLocal("medicine_reminders"));
-  }, []);
+    const all = getLocal("medicine_reminders");
+    const name = userProfile?.name?.toLowerCase();
+    const phone = userProfile?.phone;
+    setReminders(readOnly ? all.filter((item) => item.phone === phone || item.patientName?.toLowerCase() === name) : all);
+  }, [readOnly, userProfile]);
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -89,9 +92,9 @@ export function MedicineReminders({ onBack, lang = "en" }) {
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
         <h3>Active Prescriptions ({reminders.length})</h3>
-        <button className="btn-primary" onClick={() => setShowAdd(!showAdd)} style={{ width: "auto", padding: "8px 14px", fontSize: "13px" }}>
+        {!readOnly && <button className="btn-primary" onClick={() => setShowAdd(!showAdd)} style={{ width: "auto", padding: "8px 14px", fontSize: "13px" }}>
           {showAdd ? "Close" : "➕ Schedule Reminder"}
-        </button>
+        </button>}
       </div>
 
       {showAdd && (
@@ -140,7 +143,7 @@ export function MedicineReminders({ onBack, lang = "en" }) {
                   ⏰ {r.timing}
                 </div>
               </div>
-              <button
+              {!readOnly && <button
                 onClick={() => triggerSmsSim(r)}
                 disabled={sendingId === r.id}
                 style={{
@@ -154,7 +157,7 @@ export function MedicineReminders({ onBack, lang = "en" }) {
                 }}
               >
                 {sendingId === r.id ? "Sending..." : "📲 Send SMS Now"}
-              </button>
+              </button>}
             </div>
           </div>
         ))}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { subscribeToChildVaccines, updateChildDoseStatusFirestore, subscribeToCollection } from "./dataStore";
 import { sendSms } from "./smsHelper";
 
-export function ChildImmunization({ onBack, lang = "en" }) {
+export function ChildImmunization({ onBack, lang = "en", userProfile, readOnly = false }) {
   const [children, setChildren] = useState([]);
   const [selectedChildId, setSelectedChildId] = useState("");
   const [smsAlert, setSmsAlert] = useState(null);
@@ -11,9 +11,14 @@ export function ChildImmunization({ onBack, lang = "en" }) {
 
   useEffect(() => {
     const unsub = subscribeToChildVaccines((list) => {
-      setChildren(list);
-      if (list.length > 0 && !selectedChildId) {
-        setSelectedChildId(list[0].id);
+      const name = userProfile?.name?.toLowerCase();
+      const phone = userProfile?.phone;
+      const visibleChildren = readOnly
+        ? list.filter((child) => (phone && child.phone === phone) || (name && child.parentName?.toLowerCase().includes(name)))
+        : list;
+      setChildren(visibleChildren);
+      if (visibleChildren.length > 0 && !selectedChildId) {
+        setSelectedChildId(visibleChildren[0].id);
       }
     });
 
@@ -220,7 +225,7 @@ export function ChildImmunization({ onBack, lang = "en" }) {
                   </div>
 
                   <div style={{ display: "flex", gap: "8px", marginTop: "10px", paddingTop: "8px", borderTop: "1px solid var(--border)" }}>
-                    <button
+                    {!readOnly && <button
                       onClick={() => handleToggleDose(activeChild, dose)}
                       className="btn-outline"
                       style={{
@@ -232,9 +237,9 @@ export function ChildImmunization({ onBack, lang = "en" }) {
                       }}
                     >
                       {isDone ? "Mark as Pending" : "✓ Mark Given"}
-                    </button>
+                    </button>}
 
-                    <button
+                    {!readOnly && <button
                       onClick={() => handleSendReminder(activeChild, dose)}
                       className="btn-outline"
                       disabled={sendingDoseId === dose.id}
@@ -242,7 +247,7 @@ export function ChildImmunization({ onBack, lang = "en" }) {
                       title="Send SMS Reminder to Parent"
                     >
                       {sendingDoseId === dose.id ? "Sending..." : "📲 Send SMS"}
-                    </button>
+                    </button>}
                   </div>
                 </div>
               );

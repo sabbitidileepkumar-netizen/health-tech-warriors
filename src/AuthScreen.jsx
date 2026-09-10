@@ -316,6 +316,7 @@ export function AuthScreen({ lang, setLang, t }) {
                 >
                   <option value="CITIZEN">👤 {t.roleCitizen}</option>
                   <option value="ASHA_WORKER">👩‍⚕️ {t.roleAsha}</option>
+                  <option value="PHC_STAFF">🏥 PHC / Hospital Staff</option>
                   <option value="HIGHER_AUTHORITY">🏛️ {t.roleAuthority}</option>
                 </select>
               </div>
@@ -517,6 +518,17 @@ export function AuthScreen({ lang, setLang, t }) {
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "8px" }}>
+          <button
+            type="button"
+            onClick={() => loginWithDemoAccount("PHC_STAFF")}
+            style={{
+              padding: "9px 12px", borderRadius: "8px", border: "1px solid #86EFAC", background: "white", color: "#166534", fontWeight: "600", fontSize: "12px", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer"
+            }}
+          >
+            <span>🏥 <strong>PHC / Hospital:</strong> Dr. Anjali Rao (Tanuku)</span>
+            <span style={{ fontSize: "11px", color: "#16A34A" }}>Login &rarr;</span>
+          </button>
+
           <button
             type="button"
             onClick={() => loginWithDemoAccount("CITIZEN")}

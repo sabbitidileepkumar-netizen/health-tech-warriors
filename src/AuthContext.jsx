@@ -218,6 +218,17 @@ export function AuthProvider({ children }) {
           village: "Relangi",
           phone: "9848011223"
         };
+      } else if (roleType === "PHC_STAFF") {
+        target = {
+          uid: "user_phc_anjali",
+          email: "dr.anjali@carelink.in",
+          name: "Dr. Anjali Rao",
+          role: "PHC_STAFF",
+          designation: "Medical Officer",
+          facilityId: "tanuku-ah",
+          facility: "Tanuku Government Area Hospital",
+          village: "Tanuku"
+        };
       } else {
         target = {
           uid: "user_authority_rao",

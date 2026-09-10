@@ -9,10 +9,10 @@ import {
 } from "lucide-react";
 import {
   createAppointment,
+  confirmAppointment,
   createDiagnosticRequest,
   createTeleconsultation,
   subscribeToCollection,
-  updateAppointmentStatus,
   updateDiagnosticRequestStatus,
   updateTeleconsultationStatus
 } from "./dataStore";
@@ -173,6 +173,7 @@ const copy = {
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
+const SLOT_CAPACITY = 8;
 const after = (days) => {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -211,7 +212,7 @@ function SectionCard({ children }) {
 function RecordMeta({ item, c }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginTop: "8px" }}>
-      <span style={{ fontSize: "11px", color: "#64748B" }}>{c.requestId}: {item.requestCode || item.id}</span>
+      <span style={{ fontSize: "11px", color: "#64748B" }}>{c.requestId}: {item.requestCode || item.id}{item.queueToken ? ` · Token ${item.queueToken}` : ""}</span>
       <span className="badge" style={{ ...statusStyle(item.status), fontSize: "10px" }}>{item.status || "REQUESTED"}</span>
     </div>
   );
@@ -282,6 +283,16 @@ export function CareCoordination({ onBack, lang = "en", userProfile, role = "CIT
       setNotice(c.required);
       return;
     }
+    const bookedCount = appointments.filter((item) =>
+      normalize(item.facility) === normalize(appointmentForm.facility) &&
+      item.appointmentDate === appointmentForm.date &&
+      item.appointmentTime === appointmentForm.time &&
+      item.status !== "CANCELLED"
+    ).length;
+    if (bookedCount >= SLOT_CAPACITY) {
+      setNotice("This time slot is full. Please choose another time or date.");
+      return;
+    }
     await createAppointment({
       ...baseRecord(),
       requestCode: requestCode("APT"),
@@ -344,6 +355,13 @@ export function CareCoordination({ onBack, lang = "en", userProfile, role = "CIT
     ["consultations", Video, c.consultation],
     ["diagnostics", FlaskConical, c.diagnostics]
   ];
+  const matchingBookings = appointments.filter((item) =>
+    normalize(item.facility) === normalize(appointmentForm.facility) &&
+    item.appointmentDate === appointmentForm.date &&
+    item.appointmentTime === appointmentForm.time &&
+    item.status !== "CANCELLED"
+  ).length;
+  const remainingSlots = Math.max(0, SLOT_CAPACITY - matchingBookings);
 
   return (
     <div className="page-content">
@@ -392,6 +410,9 @@ export function CareCoordination({ onBack, lang = "en", userProfile, role = "CIT
                     <label>{c.date}<input type="date" min={today()} value={appointmentForm.date} onChange={(e) => setAppointmentForm({ ...appointmentForm, date: e.target.value })} /></label>
                     <label>{c.time}<input type="time" value={appointmentForm.time} onChange={(e) => setAppointmentForm({ ...appointmentForm, time: e.target.value })} /></label>
                   </div>
+                  {appointmentForm.facility && <div style={{ fontSize: "12px", color: remainingSlots ? "#166534" : "#B91C1C", background: remainingSlots ? "#F0FDF4" : "#FEF2F2", padding: "8px", borderRadius: "8px" }}>
+                    {remainingSlots ? `${remainingSlots} of ${SLOT_CAPACITY} tokens available for this slot.` : "This time slot is full. Please select another time."}
+                  </div>}
                   <label>{c.reason}<textarea rows="2" value={appointmentForm.reason} onChange={(e) => setAppointmentForm({ ...appointmentForm, reason: e.target.value })} /></label>
                 </div>
                 <button className="btn-primary" type="submit" style={primaryButton}><CalendarDays size={17} /> {c.book}</button>
@@ -404,7 +425,7 @@ export function CareCoordination({ onBack, lang = "en", userProfile, role = "CIT
             c={c}
             render={(item) => <><strong>{item.facility}</strong><p style={{ margin: "3px 0", fontSize: "12px" }}>{formatWhen(item.appointmentDate, item.appointmentTime)} · {item.reason}</p></>}
             coordinator={isCoordinator}
-            onConfirm={(item) => updateAppointmentStatus(item.id, "CONFIRMED")}
+            onConfirm={(item) => confirmAppointment(item.id)}
             onComplete={(item) => updateAppointmentStatus(item.id, "COMPLETED")}
             onCancel={(item) => updateAppointmentStatus(item.id, "CANCELLED")}
           />

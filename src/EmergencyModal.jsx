@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { createEmergencyCase } from "./dataStore";
 
-export function EmergencyModal({ onClose, lang = "en", userLocation }) {
+export function EmergencyModal({ onClose, lang = "en", userLocation, userProfile }) {
   const [called, setCalled] = useState(null);
+  const [alertCreated, setAlertCreated] = useState(false);
 
   const emergencyContacts = [
     { name: "National Ambulance Service", number: "108", desc: "For accidents, trauma & critical emergencies", icon: "🚑", color: "#DC2626" },
@@ -14,8 +16,12 @@ export function EmergencyModal({ onClose, lang = "en", userLocation }) {
     { name: "Nearest PHC Emergency Desk", number: "08819-255789", desc: "Tanuku Government Area Hospital", icon: "🏥", color: "#0D9488" }
   ];
 
-  const handleCall = (contact) => {
+  const handleCall = async (contact) => {
     setCalled(contact);
+    if ((contact.number === '108' || contact.name.includes('PHC')) && !alertCreated) {
+      await createEmergencyCase({ patientId: userProfile?.uid, patientName: userProfile?.name || 'Citizen', phone: userProfile?.phone || '', village: userLocation?.village || userProfile?.village, reason: 'SOS initiated from Citizen Portal', source: 'CITIZEN_SOS', severity: 'EMERGENCY' });
+      setAlertCreated(true);
+    }
   };
 
   const locationLabel =
@@ -45,6 +51,7 @@ export function EmergencyModal({ onClose, lang = "en", userLocation }) {
             <p style={{ fontSize: "12px", color: "#64748B", marginTop: "6px" }}>
               📍 Location transmitted: <strong>{locationLabel}</strong>
             </p>
+            {alertCreated && <p style={{ fontSize: "12px", color: "#166534", fontWeight: 700 }}>✓ Care-desk alert saved and routed to the nearest configured facility.</p>}
             <div style={{ marginTop: "16px", display: "flex", gap: "8px", justifyContent: "center" }}>
               <a href={`tel:${called.number}`} className="btn-danger" style={{ textDecoration: "none" }}>
                 Direct Phone Call

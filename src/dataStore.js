@@ -13,6 +13,7 @@ import {
   getDoc
 } from 'firebase/firestore';
 import { saveWithOfflineSupport, updateWithOfflineSupport } from './offlineSync.js';
+import { resolveFacility } from './facilityRegistry.js';
 
 const INITIAL_DATA = {
   users: [],
@@ -35,6 +36,7 @@ const INITIAL_DATA = {
   appointments: [],
   teleconsultations: [],
   diagnostic_requests: [],
+  emergency_cases: [],
   disaster_status: { active: false, alertTitle: '', floodLevel: '', affectedZones: [], shelters: [] },
   weather_intelligence: { region: '', temp: '', humidity: '', forecast: '', floodRisk: '', seasonalAlerts: [] }
 };
@@ -495,8 +497,11 @@ export async function addTriageRecord(record) {
 // === REFERRALS ===
 
 export async function addReferral(refData) {
+  const routed = resolveFacility(refData);
   const record = {
     ...refData,
+    facilityId: refData.facilityId || routed.id,
+    facility: refData.facility || routed.name,
     status: refData.status || 'Referred',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -519,6 +524,10 @@ export async function addReferral(refData) {
     'CREATE_REFERRAL',
     `Referred ${refData.patientName} to ${refData.facility || refData.referredTo}`
   );
+
+  if (refData.ambulanceDispatched) {
+    await createEmergencyCase({ ...record, referralId: res.id, source: 'ASHA_REFERRAL', reason: refData.reason || refData.chiefComplaint || 'Urgent referral' });
+  }
 
   return res;
 }
@@ -562,8 +571,11 @@ export function updateReferralStatus(id, nextStatus) {
 // lifecycle while still being linked by patientId/patientName.
 
 export async function createAppointment(appointmentData) {
+  const routed = resolveFacility(appointmentData);
   const record = {
     ...appointmentData,
+    facilityId: appointmentData.facilityId || routed.id,
+    facility: appointmentData.facility || routed.name,
     status: appointmentData.status || 'REQUESTED',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -588,9 +600,39 @@ export async function updateAppointmentStatus(id, status) {
   return status;
 }
 
+// A confirmed visit receives a simple, date-and-facility-specific token. This
+// gives ASHA workers a usable queue for the demo and remains safe offline.
+export async function confirmAppointment(id) {
+  const appointments = getLocal('appointments');
+  const appointment = appointments.find((item) => item.id === id);
+  if (!appointment) return null;
+  const sameQueue = appointments.filter((item) =>
+    item.id !== id &&
+    item.facility === appointment.facility &&
+    item.appointmentDate === appointment.appointmentDate &&
+    item.status !== 'CANCELLED'
+  );
+  const queueToken = appointment.queueToken || sameQueue.reduce((highest, item) => Math.max(highest, Number(item.queueToken) || 0), 0) + 1;
+  await updateWithOfflineSupport('appointments', id, { status: 'CONFIRMED', queueToken }, 'appointments');
+  await addNotification({
+    recipientId: appointment.patientId,
+    recipientRole: 'CITIZEN',
+    recipientName: appointment.patientName,
+    title: 'Appointment confirmed',
+    message: `Your appointment at ${appointment.facility} is confirmed. Queue token: ${queueToken}.`,
+    type: 'APPOINTMENT_CONFIRMED',
+    linkScreen: 'care',
+    relatedRecordId: id
+  });
+  return queueToken;
+}
+
 export async function createTeleconsultation(consultationData) {
+  const routed = resolveFacility(consultationData);
   const record = {
     ...consultationData,
+    facilityId: consultationData.facilityId || routed.id,
+    facility: consultationData.facility || routed.name,
     status: consultationData.status || 'REQUESTED',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -616,8 +658,11 @@ export async function updateTeleconsultationStatus(id, status) {
 }
 
 export async function createDiagnosticRequest(requestData) {
+  const routed = resolveFacility(requestData);
   const record = {
     ...requestData,
+    facilityId: requestData.facilityId || routed.id,
+    facility: requestData.facility || routed.name,
     status: requestData.status || 'REQUESTED',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -639,6 +684,31 @@ export async function createDiagnosticRequest(requestData) {
 
 export async function updateDiagnosticRequestStatus(id, status) {
   await updateWithOfflineSupport('diagnostic_requests', id, { status }, 'diagnostic_requests');
+  return status;
+}
+
+// Records a routed alert for the hospital desk. Official ambulance dispatch still
+// happens through the 108 phone service; this is the product's coordination trail.
+export async function createEmergencyCase(caseData) {
+  const facility = resolveFacility(caseData);
+  const record = {
+    ...caseData,
+    targetFacilityId: caseData.targetFacilityId || caseData.facilityId || facility.id,
+    targetFacility: caseData.targetFacility || caseData.facility || facility.name,
+    status: caseData.status || 'NEW',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const result = await saveWithOfflineSupport('emergency_cases', record, 'emergency_cases');
+  await addNotification({ recipientRole: 'ASHA_WORKER', title: 'Emergency care-desk alert', message: `${record.patientName || 'A citizen'} has an emergency routed to ${record.targetFacility}.`, type: 'EMERGENCY', linkScreen: 'care', relatedRecordId: result.id });
+  await addAuditLog(record.patientName || 'Citizen', 'CREATE_EMERGENCY_ALERT', `Emergency routed to ${record.targetFacility}`);
+  return result;
+}
+
+export async function updateEmergencyCaseStatus(id, status) {
+  const item = getLocal('emergency_cases').find((x) => x.id === id);
+  await updateWithOfflineSupport('emergency_cases', id, { status }, 'emergency_cases');
+  if (item) await addNotification({ recipientId: item.patientId, recipientRole: 'CITIZEN', recipientName: item.patientName, title: 'Emergency case update', message: `${item.targetFacility || 'The care desk'} marked your emergency case as ${status}. For immediate danger, call 108.`, type: 'EMERGENCY_UPDATE', linkScreen: 'home', relatedRecordId: id });
   return status;
 }
 

@@ -127,6 +127,13 @@ export function HomeDashboard({ onNavigate, t, lang = "en", ashaProfile }) {
       bg: "#FEF2F2"
     },
     {
+      key: "followup",
+      label: lang === "te" ? "అధిక ప్రమాద ఫాలో-అప్" : "High-Risk Follow-up",
+      icon: <AlertTriangle size={24} color="#B91C1C" />,
+      color: "#B91C1C",
+      bg: "#FEE2E2"
+    },
+    {
       key: "referral",
       label: t.referral || "PHC Referral",
       icon: <Hospital size={24} color="#D97706" />,

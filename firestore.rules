@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function staff() { return signedIn() && profile().role in ['ASHA_WORKER', 'PHC_STAFF', 'HIGHER_AUTHORITY']; }
+    function owner(data) { return signedIn() && data.patientId == request.auth.uid; }
+
+    match /users/{userId} { allow read, create, update: if signedIn() && (userId == request.auth.uid || staff()); }
+    match /patients/{patientId} { allow read, write: if staff(); }
+    match /{collectionName=appointments|teleconsultations|diagnostic_requests}/{documentId} {
+      allow create: if signedIn() && request.resource.data.patientId == request.auth.uid;
+      allow read: if staff() || owner(resource.data);
+      allow update: if staff() || (owner(resource.data) && request.resource.data.patientId == resource.data.patientId);
+    }
+    match /{collectionName=triage_records|referrals|medicine_reminders|child_vaccines}/{documentId} {
+      allow read: if staff() || owner(resource.data);
+      allow write: if staff();
+    }
+    match /emergency_cases/{documentId} {
+      allow create: if signedIn();
+      allow read: if staff() || owner(resource.data);
+      allow update: if staff();
+    }
+    match /{collectionName=schedules|alerts|supply_inventory|venom_stocks}/{documentId} { allow read: if signedIn(); allow write: if staff(); }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

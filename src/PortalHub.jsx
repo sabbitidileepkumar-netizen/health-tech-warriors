@@ -1,5 +1,5 @@
 import React from "react";
-import { Landmark, Info, ArrowRight, HeartPulse, Stethoscope } from "lucide-react";
+import { Landmark, Info, ArrowRight, HeartPulse, Stethoscope, Hospital } from "lucide-react";
 
 export function PortalHub({ user, userProfile, _role, isGuest, lang, onSelectPortal, onOpenLanguageSelect, onLogout, t }) {
   const portals = [
@@ -54,6 +54,18 @@ export function PortalHub({ user, userProfile, _role, isGuest, lang, onSelectPor
         lang === "te" ? "జిల్లా ఆరోగ్య నిఘా & అంటువ్యాధుల సమీక్ష" : "District Surveillance & Outbreak Review",
         lang === "te" ? "ఆశా వర్కర్ల టాస్కింగ్ & పర్యవేక్షణ" : "ASHA Workforce Direct Dispatch"
       ]
+    },
+    {
+      id: "hospital",
+      title: lang === "te" ? "పీహెచ్‌సీ / హాస్పిటల్ డెస్క్" : "PHC / Hospital Care Desk",
+      shortLabel: "PHC / Hospital",
+      icon: <Hospital size={30} color="#DC2626" />,
+      tagline: lang === "te" ? "అత్యవసరాలు, రిఫరల్స్ మరియు టెలికన్సల్ట్" : "Emergency intake, referrals & teleconsultations",
+      badge: "Clinical Care Desk",
+      badgeBg: "#FEF2F2",
+      badgeColor: "#DC2626",
+      borderAccent: "#DC2626",
+      features: ["108 care-desk emergency alerts", "Appointment tokens and clinical intake", "Join citizen and ASHA video/audio consults", "Diagnostic and referral status updates"]
     },
     {
       id: "about",

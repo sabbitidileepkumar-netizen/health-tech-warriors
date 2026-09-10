@@ -41,15 +41,19 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
 
   const citizenName = userProfile?.name || "Ravi Kumar";
   const citizenVillage = userProfile?.village || "Relangi";
+  const citizenId = userProfile?.uid || userProfile?.id || "";
+  const citizenPhone = userProfile?.phone || "";
+  const isMyRecord = (record) =>
+    (citizenId && (record.patientId === citizenId || record.ownerId === citizenId || record.parentId === citizenId)) ||
+    (citizenPhone && (record.patientPhone === citizenPhone || record.phone === citizenPhone)) ||
+    (citizenName && (record.patientName || record.parentName || "").toLowerCase().includes(citizenName.toLowerCase()));
 
   useEffect(() => {
     // 1. My Triage Records
     const unsubTriage = subscribeToCollection("triage_records", (list) => {
       const mine = list.filter(
         (r) =>
-          r.patientName?.toLowerCase() === citizenName.toLowerCase() ||
-          r.patientId === userProfile?.uid ||
-          r.village?.toLowerCase() === citizenVillage.toLowerCase()
+          isMyRecord(r)
       );
       setMyTriageRecords(mine);
     });
@@ -58,8 +62,7 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
     const unsubRefs = subscribeToCollection("referrals", (list) => {
       const mine = list.filter(
         (r) =>
-          r.patientName?.toLowerCase() === citizenName.toLowerCase() ||
-          r.patientId === userProfile?.uid
+          isMyRecord(r)
       );
       setMyReferrals(mine);
     });
@@ -68,8 +71,7 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
     const unsubVax = subscribeToCollection("child_vaccines", (list) => {
       const mine = list.filter(
         (c) =>
-          c.parentName?.toLowerCase().includes(citizenName.toLowerCase()) ||
-          c.village?.toLowerCase() === citizenVillage.toLowerCase()
+          isMyRecord(c)
       );
       setMyChildVaccines(mine);
     });
@@ -100,8 +102,7 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
     const unsubNotifs = subscribeToCollection("notifications", (list) => {
       const mine = list.filter(
         (n) =>
-          n.recipientRole === "CITIZEN" ||
-          n.recipientRole === "BOTH" ||
+          (citizenId && n.recipientId === citizenId) ||
           n.recipientName?.toLowerCase() === citizenName.toLowerCase()
       );
       setNotifications(mine);
@@ -122,7 +123,7 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
     return <BloodSearch onBack={() => setActiveScreen("home")} lang={lang} />;
   }
   if (activeScreen === "medicines") {
-    return <MedicineReminders onBack={() => setActiveScreen("home")} lang={lang} />;
+    return <MedicineReminders onBack={() => setActiveScreen("home")} lang={lang} userProfile={userProfile} readOnly />;
   }
   if (activeScreen === "organ") {
     return <OrganDonation onBack={() => setActiveScreen("home")} lang={lang} />;
@@ -134,7 +135,7 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
     return <HospitalFinder onBack={() => setActiveScreen("home")} lang={lang} />;
   }
   if (activeScreen === "polio") {
-    return <ChildImmunization onBack={() => setActiveScreen("home")} lang={lang} />;
+    return <ChildImmunization onBack={() => setActiveScreen("home")} lang={lang} userProfile={userProfile} readOnly />;
   }
   if (activeScreen === "snake") {
     return <VenomousAnimalTracker onBack={() => setActiveScreen("home")} lang={lang} />;
@@ -616,6 +617,7 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
           onClose={() => setShowEmergency(false)}
           lang={lang}
           userLocation={userLocation}
+          userProfile={userProfile}
         />
       )}
     </div>

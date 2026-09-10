@@ -30,6 +30,8 @@ import HospitalFinder from "./HospitalFinder";
 import ChildVaccineTracker from "./ChildVaccineTracker";
 import { AshaScheduleTasks } from "./AshaScheduleTasks";
 import { CareCoordination } from "./CareCoordination";
+import { HighRiskFollowUp } from "./HighRiskFollowUp";
+import { PHCHospitalPortal } from "./PHCHospitalPortal";
 
 function AppContent() {
   const { user, userProfile, role, isGuest, logout } = useAuth();
@@ -51,10 +53,11 @@ function AppContent() {
     return "language";
   });
 
-  // Track active portal: "citizen" | "asha" | "authority" | "about"
+  // Track active portal: citizen | asha | hospital | authority | about
   const [activePortal, setActivePortal] = useState(() => {
     if (role === "HIGHER_AUTHORITY") return "authority";
     if (role === "ASHA_WORKER") return "asha";
+    if (role === "PHC_STAFF") return "hospital";
     return "citizen";
   });
 
@@ -63,6 +66,8 @@ function AppContent() {
       setActivePortal("authority");
     } else if (role === "ASHA_WORKER") {
       setActivePortal("asha");
+    } else if (role === "PHC_STAFF") {
+      setActivePortal("hospital");
     } else if (role === "CITIZEN" || isGuest) {
       setActivePortal("citizen");
     }
@@ -291,6 +296,9 @@ function AppContent() {
           lang={lang}
         />
       );
+    }
+    if (screen === "followup") {
+      return <HighRiskFollowUp onBack={() => setScreen("home")} ashaProfile={userProfile} />;
     }
     if (screen === "care") {
       return (
@@ -627,6 +635,8 @@ function AppContent() {
           />
         ) : activePortal === "asha" ? (
           renderAshaScreen()
+        ) : activePortal === "hospital" ? (
+          <PHCHospitalPortal userProfile={userProfile} lang={lang} onSwitchPortal={() => setAppView("hub")} />
         ) : (
           <CitizenHome
             lang={lang}
@@ -656,6 +666,8 @@ function AppContent() {
             ? "Public Health Command (DM&HO)"
             : activePortal === "asha"
             ? "ASHA Portal: " + (userProfile?.name || "Field Worker")
+            : activePortal === "hospital"
+            ? "PHC / Hospital Care Desk: " + (userProfile?.name || "Clinical Staff")
             : activePortal === "about"
             ? "App Documentation"
             : isGuest
