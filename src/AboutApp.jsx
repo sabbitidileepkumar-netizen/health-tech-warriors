@@ -35,7 +35,7 @@ export function AboutApp({ onBack, lang = "en" }) {
         <div style={{ background: "#F1F5F9", padding: "12px", borderRadius: "10px", fontSize: "13px", marginBottom: "16px" }}>
           <p style={{ margin: "2px 0" }}><strong>Hackathon:</strong> Smart India Hackathon 2026</p>
           <p style={{ margin: "2px 0" }}><strong>Problem ID:</strong> SIH26133</p>
-          <p style={{ margin: "2px 0" }}><strong>Focus Region:</strong> West Godavari (Relangi &bull; Tanuku &bull; Attili &bull; K.S. Gattu)</p>
+          <p style={{ margin: "2px 0" }}><strong>Focus Region:</strong> Bhimavaram Mandal (Chinamiram and nearby village network)</p>
           <p style={{ margin: "2px 0" }}><strong>Theme:</strong> MedTech / Rural Frontline Health Lifeline</p>
         </div>
 

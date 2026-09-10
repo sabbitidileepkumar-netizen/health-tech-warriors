@@ -79,7 +79,7 @@ export function PortalHub({ user, userProfile, _role, isGuest, lang, onSelectPor
       borderAccent: "#8B5CF6",
       features: [
         lang === "te" ? "100% ఆఫ్‌లైన్-ఫస్ట్ ఆర్కిటెక్చర్" : "100% Offline-First Local Cache",
-        lang === "te" ? "గోదావరి గ్రామీణ కవరేజ్ (రిలంగి, తణుకు, అత్తిలి)" : "West Godavari Sub-Centre Network",
+        lang === "te" ? "భీమవరం గ్రామీణ ఆరోగ్య నెట్‌వర్క్" : "Bhimavaram Rural Health Network",
         lang === "te" ? "సిస్టమ్ డాక్యుమెంటేషన్ & మార్గదర్శకాలు" : "System Architecture & User Guidelines",
         lang === "te" ? "హెల్ప్‌డెస్క్ & అత్యవసర కాంటాక్ట్స్" : "24/7 Support & Health Emergency Desk"
       ]
@@ -122,7 +122,7 @@ export function PortalHub({ user, userProfile, _role, isGuest, lang, onSelectPor
               </h1>
               <p style={{ color: "#E0F2FE", margin: "3px 0 0", fontSize: "12px" }}>
                 {userProfile?.name || user?.email || (isGuest ? "Guest Access" : "CareLink User")} &bull;{" "}
-                <strong>{userProfile?.village || "Relangi Health Beat"}</strong>
+                <strong>{userProfile?.village || "Chinamiram Health Beat"}</strong>
               </p>
             </div>
           </div>

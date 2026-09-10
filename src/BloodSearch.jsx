@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getLocal, addBloodDonor } from "./dataStore";
+import { VILLAGES, DEFAULT_VILLAGE } from "./villageConfig";
 
 export function BloodSearch({ onBack, lang = "en" }) {
   const [selectedGroup, setSelectedGroup] = useState("All");
@@ -8,11 +9,11 @@ export function BloodSearch({ onBack, lang = "en" }) {
   const [newDonorName, setNewDonorName] = useState("");
   const [newDonorGroup, setNewDonorGroup] = useState("O+");
   const [newDonorPhone, setNewDonorPhone] = useState("");
-  const [newDonorVillage, setNewDonorVillage] = useState("Relangi");
+  const [newDonorVillage, setNewDonorVillage] = useState(DEFAULT_VILLAGE);
   const [emergencyAlertSent, setEmergencyAlertSent] = useState(false);
 
   const bloodGroups = ["All", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
-  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = VILLAGES;
 
   useEffect(() => {
     setDonors(getLocal("blood_donors"));
@@ -29,14 +30,14 @@ export function BloodSearch({ onBack, lang = "en" }) {
       name: newDonorName,
       bloodGroup: newDonorGroup,
       phone: newDonorPhone,
-      village: newDonorVillage || "Relangi",
+      village: newDonorVillage || DEFAULT_VILLAGE,
       distanceKm: 1.5
     });
     setDonors(getLocal("blood_donors"));
     setShowRegister(false);
     setNewDonorName("");
     setNewDonorPhone("");
-    setNewDonorVillage("Relangi");
+    setNewDonorVillage(DEFAULT_VILLAGE);
     alert("Thank you! You are now registered as a Life Saver Voluntary Blood Donor.");
   };
 

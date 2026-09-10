@@ -591,8 +591,54 @@ export async function createAppointment(appointmentData) {
     linkScreen: 'care',
     relatedRecordId: result.id
   });
+
+  // Escalate a high case load separately so it is immediately visible to the
+  // district authority, even before the report is manually reviewed.
+  if (Number(reportData.affectedCount) >= 50 || reportData.severity === 'CRITICAL') {
+    await addNotification({
+      recipientRole: 'HIGHER_AUTHORITY',
+      title: `Priority health-camp review: ${reportData.village}`,
+      message: `${reportData.affectedCount} reported cases meet the escalation threshold. Review and schedule a free medical camp.`,
+      type: 'HEALTH_CAMP_ESCALATION',
+      linkScreen: 'outbreaks',
+      relatedRecordId: res.id
+    });
+  }
   await addAuditLog(appointmentData.patientName || 'Citizen', 'CREATE_APPOINTMENT', `Requested an appointment at ${appointmentData.facility}`);
   return result;
+}
+
+// Authority action: creates both a public campaign and an ASHA-operational
+// schedule. This is a real persisted workflow, including offline queueing.
+export async function scheduleFreeMedicalCampFromOutbreak(report) {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  const campDate = date.toISOString().slice(0, 10);
+  const title = `Free Medical Camp — ${report.village}`;
+  const campaign = await addCampaign({
+    title,
+    target: 'All residents; priority screening for reported illness',
+    targetVillages: [report.village],
+    date: campDate,
+    targetedCount: Number(report.affectedCount) || 0,
+    campaignType: 'FREE_MEDICAL_CAMP',
+    sourceOutbreakId: report.id
+  });
+  const schedule = await saveWithOfflineSupport('schedules', {
+    title,
+    village: report.village,
+    date: campDate,
+    time: '09:00 AM - 03:00 PM',
+    task: 'Free medical camp: triage, consultation, medicines and referral',
+    priority: 'Critical',
+    status: 'PUBLISHED',
+    sourceOutbreakId: report.id,
+    createdAt: new Date().toISOString()
+  }, 'schedules');
+  await updateOutbreakStatus(report.id, 'CAMP_SCHEDULED', { campScheduled: true, campDate, campaignId: campaign.id, scheduleId: schedule.id });
+  await addNotification({ recipientRole: 'BOTH', title: `Free medical camp scheduled: ${report.village}`, message: `A free health camp for ${report.condition} response is scheduled on ${campDate}. Please attend or support outreach.`, type: 'HEALTH_CAMP', linkScreen: 'campaigns', relatedRecordId: campaign.id });
+  await addAuditLog('Higher Authority', 'SCHEDULE_FREE_MEDICAL_CAMP', `Scheduled free medical camp in ${report.village} for outbreak ${report.id}`);
+  return { campaign, schedule, campDate };
 }
 
 export async function updateAppointmentStatus(id, status) {

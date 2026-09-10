@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "./AuthContext";
+import { VILLAGES, DEFAULT_VILLAGE } from "./villageConfig";
 
 export function AuthScreen({ lang, setLang, t }) {
   const {
@@ -16,14 +17,14 @@ export function AuthScreen({ lang, setLang, t }) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [selectedRole, setSelectedRole] = useState("CITIZEN");
-  const [village, setVillage] = useState("Relangi");
+  const [village, setVillage] = useState(DEFAULT_VILLAGE);
   const [phone, setPhone] = useState("");
 
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = VILLAGES;
 
   const authErrorMessage = (err, fallback) => {
     const messages = {
@@ -525,7 +526,7 @@ export function AuthScreen({ lang, setLang, t }) {
               padding: "9px 12px", borderRadius: "8px", border: "1px solid #86EFAC", background: "white", color: "#166534", fontWeight: "600", fontSize: "12px", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer"
             }}
           >
-            <span>🏥 <strong>PHC / Hospital:</strong> Dr. Anjali Rao (Tanuku)</span>
+            <span>🏥 <strong>PHC / Hospital:</strong> Dr. Anjali Rao (Bhimavaram)</span>
             <span style={{ fontSize: "11px", color: "#16A34A" }}>Login &rarr;</span>
           </button>
 
@@ -547,7 +548,7 @@ export function AuthScreen({ lang, setLang, t }) {
               cursor: "pointer"
             }}
           >
-            <span>👤 <strong>Citizen View:</strong> Ravi Kumar (Relangi)</span>
+            <span>👤 <strong>Citizen View:</strong> Dileep Kumar (Chinamiram)</span>
             <span style={{ fontSize: "11px", color: "#16A34A" }}>Login &rarr;</span>
           </button>
 
@@ -569,7 +570,7 @@ export function AuthScreen({ lang, setLang, t }) {
               cursor: "pointer"
             }}
           >
-            <span>👩‍⚕️ <strong>ASHA Worker:</strong> Rani Devi (Relangi Beat)</span>
+            <span>👩‍⚕️ <strong>ASHA Worker:</strong> Rani Devi (Chinamiram Beat)</span>
             <span style={{ fontSize: "11px", color: "#16A34A" }}>Login &rarr;</span>
           </button>
 

@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { addOutbreakReport } from "./dataStore";
+import { VILLAGES, DEFAULT_VILLAGE } from "./villageConfig";
 
 export function AshaOutbreakReportModal({ onClose, ashaProfile, lang = "en" }) {
-  const [village, setVillage] = useState(ashaProfile?.village || "Relangi");
+  const [village, setVillage] = useState(ashaProfile?.village || DEFAULT_VILLAGE);
   const [condition, setCondition] = useState("Acute Gastroenteritis / Diarrhea");
   const [affectedCount, setAffectedCount] = useState(15);
   const [severity, setSeverity] = useState("SEVERE");
   const [description, setDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = VILLAGES;
   const conditions = [
     "Acute Gastroenteritis / Watery Diarrhea",
     "Viral Fever with Dengue Warning Signs",

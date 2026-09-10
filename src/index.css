@@ -1,11 +1,11 @@
-/* CareLink Design System - SIH 2026 */
+/* CareLink Design System - SIH 2026, Material-inspired healthcare palette */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap');
 
 :root {
-  --primary: #0F6CBD;
-  --primary-hover: #0c5999;
-  --primary-light: #EBF3FC;
-  --primary-dark: #0A4373;
+  --primary: #1A73E8;
+  --primary-hover: #1558B0;
+  --primary-light: #E8F0FE;
+  --primary-dark: #174EA6;
   
   --secondary: #0D9488;
   --secondary-light: #E6F7F5;
@@ -22,7 +22,7 @@
   --success: #16A34A;
   --success-light: #F0FDF4;
 
-  --bg-page: #F1F5F9;
+  --bg-page: #F8FAFD;
   --bg-card: #FFFFFF;
   --bg-subtle: #F8FAFC;
   
@@ -36,8 +36,8 @@
   --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.1);
 
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
   --radius-full: 9999px;
   
   --font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', 'Noto Sans Telugu', system-ui, -apple-system, sans-serif;

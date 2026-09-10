@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { getLocal, saveLocal, addAuditLog } from "./dataStore";
+import { VILLAGES, DEFAULT_VILLAGE } from "./villageConfig";
 
 export function AuthorityAshaManagement({ lang = "en", onAssignSchedule }) {
   const [workers, setWorkers] = useState([]);
   const [search, setSearch] = useState("");
   const [editingWorker, setEditingWorker] = useState(null);
-  const [newVillage, setNewVillage] = useState("Relangi");
+  const [newVillage, setNewVillage] = useState(DEFAULT_VILLAGE);
 
-  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = VILLAGES;
 
   useEffect(() => {
     const allUsers = getLocal("users");

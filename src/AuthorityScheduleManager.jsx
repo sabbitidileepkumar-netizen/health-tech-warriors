@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { subscribeToCollection, addSchedule, updateScheduleStatus } from "./dataStore";
+import { VILLAGES, DEFAULT_VILLAGE } from "./villageConfig";
 
 export function AuthorityScheduleManager({ _lang = "en" }) {
   const [schedules, setSchedules] = useState([]);
@@ -9,7 +10,7 @@ export function AuthorityScheduleManager({ _lang = "en" }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("09:00 AM - 02:00 PM");
-  const [village, setVillage] = useState("Relangi");
+  const [village, setVillage] = useState(DEFAULT_VILLAGE);
   const [assignedAshaId, setAssignedAshaId] = useState("ASHA-001");
   const [assignedAshaName, setAssignedAshaName] = useState("Rani Devi");
   const [task, setTask] = useState("Child Vaccination & Vitamin A Drops");
@@ -17,12 +18,12 @@ export function AuthorityScheduleManager({ _lang = "en" }) {
   const [priority, setPriority] = useState("High");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = VILLAGES;
   const ashaList = [
-    { id: "ASHA-001", name: "Rani Devi", village: "Relangi" },
-    { id: "ASHA-002", name: "Sita Kumari", village: "Tanuku" },
-    { id: "ASHA-003", name: "Padma Lakshmi", village: "Attili" },
-    { id: "ASHA-004", name: "K. Mary", village: "K.S. Gattu" }
+    { id: "ASHA-001", name: "Rani Devi", village: "Chinamiram" },
+    { id: "ASHA-002", name: "Sita Kumari", village: "Rayalam" },
+    { id: "ASHA-003", name: "Padma Lakshmi", village: "Annavaram" },
+    { id: "ASHA-004", name: "K. Mary", village: "Taderu" }
   ];
 
   useEffect(() => {

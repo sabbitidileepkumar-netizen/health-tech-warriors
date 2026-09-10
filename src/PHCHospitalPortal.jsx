@@ -6,7 +6,7 @@ const statuses = ['NEW', 'ACKNOWLEDGED', 'DISPATCHED', 'RECEIVED', 'CLOSED'];
 const card = { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, marginBottom: 12 };
 
 export function PHCHospitalPortal({ userProfile, lang, onSwitchPortal }) {
-  const [facilityId, setFacilityId] = useState(userProfile?.facilityId || 'tanuku-ah');
+  const [facilityId, setFacilityId] = useState(userProfile?.facilityId || 'bhimavaram-care-desk');
   const [data, setData] = useState({ appointments: [], teleconsultations: [], diagnostic_requests: [], referrals: [], emergency_cases: [], triage_records: [] });
   const [tab, setTab] = useState('Overview');
   const facility = FACILITIES.find((x) => x.id === facilityId) || FACILITIES[0];

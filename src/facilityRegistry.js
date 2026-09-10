@@ -1,8 +1,9 @@
-// Offline routing registry. Replace these demo entries with verified district master data before deployment.
+import { VILLAGES } from './villageConfig.js';
+// Presentation routing registry. Verify current facility capability/contact details with AP Health before deployment.
 export const FACILITIES = [
-  { id: 'tanuku-ah', name: 'Tanuku Government Area Hospital', villages: ['Relangi', 'Tanuku', 'K.S. Gattu'], emergencyDesk: '108' },
-  { id: 'attili-phc', name: 'Attili PHC', villages: ['Attili', 'Velpuru', 'Manchili'], emergencyDesk: '108' },
-  { id: 'bhimavaram-chc', name: 'Bhimavaram Community Health Centre', villages: ['Bhimavaram', 'Akividu'], emergencyDesk: '108' }
+  { id: 'bhimavaram-care-desk', name: 'Bhimavaram Government Care Desk', villages: VILLAGES, emergencyDesk: '108' },
+  { id: 'chinamiram-phc', name: 'Chinamiram PHC Care Desk', villages: ['Chinamiram', 'Rayalam', 'Annavaram', 'Narasimhapuram', 'Kovvada'], emergencyDesk: '108' },
+  { id: 'bhimavaram-referral', name: 'Bhimavaram Referral Care Desk', villages: ['Taderu', 'Yenamadurru', 'Komarada', 'Anakoderu', 'Losarigutlapadu', 'Dirusumarru', 'Bethapudi', 'Thundurru', 'Vempa', 'Gunupudi'], emergencyDesk: '108' }
 ];
 
 export function resolveFacility({ facility, village } = {}) {

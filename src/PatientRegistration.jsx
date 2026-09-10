@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { saveWithOfflineSupport } from "./offlineSync";
+import { VILLAGES, DEFAULT_VILLAGE } from "./villageConfig";
 
 function PatientRegistration({ onBack, t, lang = "en" }) {
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("Male");
-  const [village, setVillage] = useState("Relangi");
+  const [village, setVillage] = useState(DEFAULT_VILLAGE);
   const [category, setCategory] = useState("Adult");
   const [phone, setPhone] = useState("");
   const [bloodGroup, setBloodGroup] = useState("O+");
@@ -13,7 +14,7 @@ function PatientRegistration({ onBack, t, lang = "en" }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = VILLAGES;
   const bloodGroups = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 
   const getCategory = (ageValue, genderValue) => {

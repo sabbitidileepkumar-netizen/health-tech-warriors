@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { subscribeToCollection, addAlert, toggleAlertActive } from "./dataStore";
+import { VILLAGES, DEFAULT_VILLAGE } from "./villageConfig";
 
 export function AuthorityAlertsManager({ lang = "en" }) {
   const [alerts, setAlerts] = useState([]);
@@ -9,10 +10,10 @@ export function AuthorityAlertsManager({ lang = "en" }) {
   const [severity, setSeverity] = useState("HIGH");
   const [message, setMessage] = useState("");
   const [targetType, setTargetType] = useState("VILLAGE");
-  const [selectedVillages, setSelectedVillages] = useState(["Relangi"]);
+  const [selectedVillages, setSelectedVillages] = useState([DEFAULT_VILLAGE]);
   const [audience, setAudience] = useState("BOTH");
 
-  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = VILLAGES;
 
   useEffect(() => {
     const unsub = subscribeToCollection("alerts", (list) => {

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { subscribeToCollection, updateOutbreakStatus, addAlert } from "./dataStore";
+import { subscribeToCollection, updateOutbreakStatus, addAlert, scheduleFreeMedicalCampFromOutbreak } from "./dataStore";
 
 export function AuthorityOutbreakReview({ _lang = "en" }) {
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
   const [actionNotes, setActionNotes] = useState("");
   const [broadcastAlertOnVerify, setBroadcastAlertOnVerify] = useState(true);
+  const [campConfirmation, setCampConfirmation] = useState("");
 
   useEffect(() => {
     const unsub = subscribeToCollection("outbreak_reports", (list) => {
@@ -36,6 +37,12 @@ export function AuthorityOutbreakReview({ _lang = "en" }) {
     setActionNotes("");
   };
 
+  const handleScheduleCamp = async (report) => {
+    const result = await scheduleFreeMedicalCampFromOutbreak(report);
+    setCampConfirmation(`Free medical camp scheduled in ${report.village} for ${result.campDate}.`);
+    setSelectedReport(null);
+  };
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
@@ -49,6 +56,7 @@ export function AuthorityOutbreakReview({ _lang = "en" }) {
           {reports.filter((r) => r.status !== "RESOLVED").length} Active Reports
         </span>
       </div>
+      {campConfirmation && <div style={{ background: "#DCFCE7", color: "#166534", borderRadius: "10px", padding: "10px 12px", marginBottom: "12px", fontSize: "13px", fontWeight: 700 }}>✓ {campConfirmation}</div>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {reports.length === 0 ? (
@@ -121,6 +129,11 @@ export function AuthorityOutbreakReview({ _lang = "en" }) {
                     >
                       ⚡ Mobilize Response
                     </button>
+                    {!rep.campScheduled && (
+                      <button className="btn-primary" onClick={() => handleScheduleCamp(rep)} style={{ padding: "6px 14px", fontSize: "12px", background: "#0D9488" }}>
+                        🏕️ Schedule Free Camp
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -173,6 +186,9 @@ export function AuthorityOutbreakReview({ _lang = "en" }) {
               >
                 🚨 Deploy MMU & Take Action
               </button>
+              {!selectedReport.campScheduled && <button className="btn-primary" onClick={() => handleScheduleCamp(selectedReport)} style={{ flex: 2, background: "#0D9488" }}>
+                🏕️ Schedule Free Camp
+              </button>}
               <button
                 className="btn-primary"
                 onClick={() => handleTakeAction(selectedReport, "RESOLVED")}

@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 import { auth } from "./firebase";
 import { getUserProfile, saveUserProfile, getLocal } from "./dataStore";
+import { DEFAULT_VILLAGE } from "./villageConfig";
 
 const AuthContext = createContext(null);
 
@@ -45,7 +46,7 @@ export function AuthProvider({ children }) {
               email: firebaseUser.email,
               name: firebaseUser.displayName || firebaseUser.email.split("@")[0],
               role: "CITIZEN",
-              village: "Relangi"
+              village: DEFAULT_VILLAGE
             };
             await saveUserProfile(firebaseUser.uid, profile);
           }
@@ -87,7 +88,7 @@ export function AuthProvider({ children }) {
             email: cred.user.email,
             name: cred.user.email.split("@")[0],
             role: "CITIZEN",
-            village: "Relangi"
+            village: DEFAULT_VILLAGE
           };
           await saveUserProfile(cred.user.uid, profile);
         }
@@ -116,7 +117,7 @@ export function AuthProvider({ children }) {
         email: cred.user.email,
         name: extraData.name || cred.user.email.split("@")[0],
         role: extraData.role || "CITIZEN",
-        village: extraData.village || "Relangi",
+        village: extraData.village || DEFAULT_VILLAGE,
         phone: extraData.phone || "",
         age: extraData.age || "",
         bloodGroup: extraData.bloodGroup || "O+",
@@ -201,9 +202,9 @@ export function AuthProvider({ children }) {
         target = {
           uid: "user_citizen_ravi",
           email: "ravi.kumar@carelink.in",
-          name: "Ravi Kumar",
+          name: "Dileep Kumar",
           role: "CITIZEN",
-          village: "Relangi",
+          village: DEFAULT_VILLAGE,
           phone: "9848022338",
           assignedAshaId: "ASHA-001",
           assignedAshaName: "Rani Devi"
@@ -215,7 +216,7 @@ export function AuthProvider({ children }) {
           name: "Rani Devi",
           workerId: "ASHA-001",
           role: "ASHA_WORKER",
-          village: "Relangi",
+          village: DEFAULT_VILLAGE,
           phone: "9848011223"
         };
       } else if (roleType === "PHC_STAFF") {
@@ -225,9 +226,9 @@ export function AuthProvider({ children }) {
           name: "Dr. Anjali Rao",
           role: "PHC_STAFF",
           designation: "Medical Officer",
-          facilityId: "tanuku-ah",
-          facility: "Tanuku Government Area Hospital",
-          village: "Tanuku"
+          facilityId: "bhimavaram-care-desk",
+          facility: "Bhimavaram Government Care Desk",
+          village: "Bhimavaram"
         };
       } else {
         target = {

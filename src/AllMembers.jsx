@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getLocal } from "./dataStore";
+import { VILLAGES } from "./villageConfig";
 
 export function AllMembers({ onBack, onNavigateToTriage, onNavigateToReferral, lang = "en" }) {
   const [members, setMembers] = useState([]);
@@ -8,7 +9,7 @@ export function AllMembers({ onBack, onNavigateToTriage, onNavigateToReferral, l
   const [searchQuery, setSearchQuery] = useState("");
   const [activeProfile, setActiveProfile] = useState(null);
 
-  const villages = ["All", "Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = ["All", ...VILLAGES];
   const categories = ["All", "Child", "Woman", "Adult", "Elderly"];
 
   useEffect(() => {

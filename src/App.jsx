@@ -110,10 +110,10 @@ function AppContent() {
           addr.city ||
           addr.county ||
           data.display_name ||
-          "Relangi, West Godavari"
+          "Chinamiram, Bhimavaram"
         );
       } catch (_e) {
-        return "Relangi, West Godavari";
+        return "Chinamiram, Bhimavaram";
       }
     };
 
@@ -137,7 +137,7 @@ function AppContent() {
         },
         () => {
           setUserLocation({
-            village: "Relangi (Default)",
+            village: "Chinamiram (Default)",
             coords: "16.704° N, 81.630° E",
             accuracy: "GPS Default Mode"
           });
@@ -244,7 +244,7 @@ function AppContent() {
         <AshaScheduleTasks
           onBack={() => setScreen("home")}
           currentWorkerId={userProfile?.workerId || "ASHA-001"}
-          currentVillage={userProfile?.village || "Relangi"}
+          currentVillage={userProfile?.village || "Chinamiram"}
           lang={lang}
         />
       );
@@ -562,6 +562,8 @@ function AppContent() {
                   ? "#EEF2FF"
                   : activePortal === "asha"
                   ? "#E6F7F5"
+                  : activePortal === "hospital"
+                  ? "#FEF2F2"
                   : activePortal === "about"
                   ? "#F5F3FF"
                   : "#EBF3FC",
@@ -570,6 +572,8 @@ function AppContent() {
                   ? "#4F46E5"
                   : activePortal === "asha"
                   ? "#0D9488"
+                  : activePortal === "hospital"
+                  ? "#B91C1C"
                   : activePortal === "about"
                   ? "#7C3AED"
                   : "#0F6CBD",
@@ -580,6 +584,8 @@ function AppContent() {
               ? "🏛️ Higher Authority Portal"
               : activePortal === "asha"
               ? "👩‍⚕️ ASHA Worker Portal"
+              : activePortal === "hospital"
+              ? "🏥 PHC / Hospital Care Desk"
               : activePortal === "about"
               ? "ℹ️ About CareLink"
               : isGuest
@@ -593,7 +599,7 @@ function AppContent() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "11px", color: "#94A3B8" }}>
-            Village: <strong>{userProfile?.village || "Relangi"}</strong>
+            Village: <strong>{userProfile?.village || "Chinamiram"}</strong>
           </span>
           <button
             onClick={() => setAppView("hub")}
@@ -660,7 +666,7 @@ function AppContent() {
           color: "#94A3B8"
         }}
       >
-        CareLink Rural Health Lifeline &bull; West Godavari (Relangi &bull; Tanuku &bull; Attili &bull; K.S. Gattu) &bull; Mode:{" "}
+        CareLink Rural Health Lifeline &bull; Bhimavaram Mandal &bull; Chinamiram community coverage &bull; Mode:{" "}
         <strong>
           {activePortal === "authority"
             ? "Public Health Command (DM&HO)"

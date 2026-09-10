@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { subscribeToCollection, addCampaign } from "./dataStore";
+import { VILLAGES, DEFAULT_VILLAGE } from "./villageConfig";
 
 export function AuthorityCampaignManager({ _lang = "en" }) {
   const [campaigns, setCampaigns] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
   const [target, setTarget] = useState("Children aged 0-5 years");
-  const [selectedVillages, setSelectedVillages] = useState(["Relangi", "Tanuku"]);
+  const [selectedVillages, setSelectedVillages] = useState([DEFAULT_VILLAGE]);
   const [date, setDate] = useState("");
   const [targetedCount, setTargetedCount] = useState(300);
 
-  const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
+  const villages = VILLAGES;
 
   useEffect(() => {
     const unsub = subscribeToCollection("campaigns", (list) => {
