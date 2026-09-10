@@ -9,7 +9,8 @@ import {
   HeartHandshake,
   HeartPulse,
   Siren,
-  Bell
+  Bell,
+  CalendarDays
 } from "lucide-react";
 import { EmergencyModal } from "./EmergencyModal";
 import { BloodSearch } from "./BloodSearch";
@@ -21,6 +22,7 @@ import { ChildImmunization } from "./ChildImmunization";
 import { VenomousAnimalTracker } from "./VenomousAnimalTracker";
 import { WeatherSeasonalAlerts } from "./WeatherSeasonalAlerts";
 import { AIAssistant } from "./AIAssistant";
+import { CareCoordination } from "./CareCoordination";
 import { subscribeToCollection, markNotificationRead } from "./dataStore";
 
 export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest = false }) {
@@ -143,12 +145,23 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
   if (activeScreen === "ai") {
     return <AIAssistant onBack={() => setActiveScreen("home")} lang={lang} />;
   }
+  if (activeScreen === "care") {
+    return (
+      <CareCoordination
+        onBack={() => setActiveScreen("home")}
+        lang={lang}
+        userProfile={userProfile}
+        isGuest={isGuest}
+      />
+    );
+  }
 
   const citizenItems = [
     { key: "snake", icon: "🐍", bg: "#FEE2E2", color: "#DC2626", title: t.snakebiteEmergency || "Snakebite SOS", desc: t.snakebiteEmergencyDesc || "First aid & Anti-Venom" },
     { key: "blood", icon: Droplet, bg: "#FEE2E2", color: "#DC2626", title: t.bloodBank, desc: t.bloodBankDesc },
     { key: "polio", icon: Baby, bg: "#FEF3C7", color: "#D97706", title: t.childImmunization || "Child Polio Drops", desc: t.childImmunizationDesc || "Vaccination calendar" },
     { key: "ai", icon: Bot, bg: "#F3E8FF", color: "#7E22CE", title: t.aiAssistant || "AI Health Copilot", desc: t.aiAssistantDesc || "Voice medical advisor" },
+    { key: "care", icon: CalendarDays, bg: "#E0F2FE", color: "#075985", title: lang === "te" ? "చికిత్స సమన్వయం" : lang === "hi" ? "देखभाल समन्वय" : lang === "mr" ? "सेवा समन्वय" : "Care coordination", desc: lang === "te" ? "అపాయింట్‌మెంట్, పరీక్షలు మరియు వీడియో సంప్రదింపు" : lang === "hi" ? "अपॉइंटमेंट, जांच और वीडियो परामर्श" : lang === "mr" ? "अपॉइंटमेंट, तपासण्या व व्हिडिओ सल्ला" : "Appointments, tests & video consult" },
     { key: "hospitals", icon: Hospital, bg: "#EBF3FC", color: "#0F6CBD", title: t.findHospital, desc: t.findHospitalDesc },
     { key: "weather", icon: CloudRain, bg: "#E0F2FE", color: "#0284C7", title: t.weatherAlerts || "Weather Alerts", desc: t.weatherAlertsDesc || "Flood & outbreak alerts" },
     { key: "medicines", icon: Pill, bg: "#E6F7F5", color: "#0D9488", title: t.medicines, desc: t.medicinesDesc },
@@ -490,6 +503,20 @@ export function CitizenHome({ lang = "en", t, userLocation, userProfile, isGuest
 
           {/* Quick Access to Key Services */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "6px" }}>
+            <div
+              className="care-card"
+              onClick={() => setActiveScreen("care")}
+              style={{ cursor: "pointer", textAlign: "center", padding: "14px", border: "1.5px solid #BAE6FD" }}
+            >
+              <span style={{ fontSize: "28px" }}>📅</span>
+              <div style={{ fontWeight: "700", fontSize: "13px", color: "#075985", marginTop: "4px" }}>
+                {lang === "te" ? "చికిత్స సమన్వయం" : lang === "hi" ? "देखभाल समन्वय" : lang === "mr" ? "सेवा समन्वय" : "Care Coordination"}
+              </div>
+              <div style={{ fontSize: "11px", color: "#64748B" }}>
+                {lang === "te" ? "అపాయింట్‌మెంట్ & వీడియో సంప్రదింపు" : lang === "hi" ? "अपॉइंटमेंट और वीडियो परामर्श" : lang === "mr" ? "अपॉइंटमेंट व व्हिडिओ सल्ला" : "Appointments & video consult"}
+              </div>
+            </div>
+
             <div
               className="care-card"
               onClick={() => setActiveScreen("ai")}

@@ -29,6 +29,7 @@ import { AIAssistant } from "./AIAssistant";
 import HospitalFinder from "./HospitalFinder";
 import ChildVaccineTracker from "./ChildVaccineTracker";
 import { AshaScheduleTasks } from "./AshaScheduleTasks";
+import { CareCoordination } from "./CareCoordination";
 
 function AppContent() {
   const { user, userProfile, role, isGuest, logout } = useAuth();
@@ -288,6 +289,16 @@ function AppContent() {
           }}
           defaultPatient={referralPatient}
           lang={lang}
+        />
+      );
+    }
+    if (screen === "care") {
+      return (
+        <CareCoordination
+          onBack={() => setScreen("home")}
+          lang={lang}
+          userProfile={userProfile}
+          role="ASHA_WORKER"
         />
       );
     }

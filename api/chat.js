@@ -125,8 +125,11 @@ ${message.trim().slice(0, 5000)}`,
       },
     ];
 
+    // Keep the deployment selectable: model availability changes over time and
+    // using an environment variable avoids a frontend redeploy for a model swap.
+    const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       {
         method: "POST",
 
@@ -153,11 +156,12 @@ ${message.trim().slice(0, 5000)}`,
         JSON.stringify(result)
       );
 
-      return res.status(response.status).json({
-        error:
-          result?.error?.message ||
-          "Gemini API request failed.",
-      });
+      const error = response.status === 429
+        ? "The AI service is busy. Please wait a moment and try again."
+        : response.status === 403
+        ? "The AI service is not configured for this deployment. Please contact the project administrator."
+        : result?.error?.message || "Gemini API request failed.";
+      return res.status(response.status).json({ error });
     }
 
     const rawText =

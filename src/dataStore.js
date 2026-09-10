@@ -12,7 +12,7 @@ import {
   setDoc,
   getDoc
 } from 'firebase/firestore';
-import { saveWithOfflineSupport } from './offlineSync.js';
+import { saveWithOfflineSupport, updateWithOfflineSupport } from './offlineSync.js';
 
 const INITIAL_DATA = {
   users: [],
@@ -32,6 +32,9 @@ const INITIAL_DATA = {
   outbreak_reports: [],
   notifications: [],
   audit_logs: [],
+  appointments: [],
+  teleconsultations: [],
+  diagnostic_requests: [],
   disaster_status: { active: false, alertTitle: '', floodLevel: '', affectedZones: [], shelters: [] },
   weather_intelligence: { region: '', temp: '', humidity: '', forecast: '', floodRisk: '', seasonalAlerts: [] }
 };
@@ -551,6 +554,92 @@ export function updateReferralStatus(id, nextStatus) {
   }
 
   return updated;
+}
+
+// === CARE COORDINATION ===
+// These collections are deliberately separate from referrals so a routine
+// appointment, diagnostic test, and remote consultation can have their own
+// lifecycle while still being linked by patientId/patientName.
+
+export async function createAppointment(appointmentData) {
+  const record = {
+    ...appointmentData,
+    status: appointmentData.status || 'REQUESTED',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const result = await saveWithOfflineSupport('appointments', record, 'appointments');
+
+  await addNotification({
+    recipientRole: 'ASHA_WORKER',
+    recipientId: appointmentData.assignedAshaId,
+    title: 'New appointment request',
+    message: `${appointmentData.patientName} requested ${appointmentData.appointmentType || 'a consultation'} at ${appointmentData.facility} on ${appointmentData.appointmentDate}.`,
+    type: 'APPOINTMENT',
+    linkScreen: 'care',
+    relatedRecordId: result.id
+  });
+  await addAuditLog(appointmentData.patientName || 'Citizen', 'CREATE_APPOINTMENT', `Requested an appointment at ${appointmentData.facility}`);
+  return result;
+}
+
+export async function updateAppointmentStatus(id, status) {
+  await updateWithOfflineSupport('appointments', id, { status }, 'appointments');
+  return status;
+}
+
+export async function createTeleconsultation(consultationData) {
+  const record = {
+    ...consultationData,
+    status: consultationData.status || 'REQUESTED',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const result = await saveWithOfflineSupport('teleconsultations', record, 'teleconsultations');
+
+  await addNotification({
+    recipientRole: 'ASHA_WORKER',
+    recipientId: consultationData.assignedAshaId,
+    title: 'New teleconsultation request',
+    message: `${consultationData.patientName} requested a ${consultationData.mode?.toLowerCase() || 'remote'} consultation on ${consultationData.scheduledDate}.`,
+    type: 'TELECONSULTATION',
+    linkScreen: 'care',
+    relatedRecordId: result.id
+  });
+  await addAuditLog(consultationData.patientName || 'Citizen', 'CREATE_TELECONSULTATION', `Requested ${consultationData.mode || 'remote'} consultation`);
+  return result;
+}
+
+export async function updateTeleconsultationStatus(id, status) {
+  await updateWithOfflineSupport('teleconsultations', id, { status }, 'teleconsultations');
+  return status;
+}
+
+export async function createDiagnosticRequest(requestData) {
+  const record = {
+    ...requestData,
+    status: requestData.status || 'REQUESTED',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const result = await saveWithOfflineSupport('diagnostic_requests', record, 'diagnostic_requests');
+
+  await addNotification({
+    recipientRole: 'ASHA_WORKER',
+    recipientId: requestData.assignedAshaId,
+    title: 'New diagnostic request',
+    message: `${requestData.patientName} requested ${requestData.testType} at ${requestData.facility}.`,
+    type: 'DIAGNOSTIC_REQUEST',
+    linkScreen: 'care',
+    relatedRecordId: result.id
+  });
+  await addAuditLog(requestData.patientName || 'Citizen', 'CREATE_DIAGNOSTIC_REQUEST', `Requested ${requestData.testType}`);
+  return result;
+}
+
+export async function updateDiagnosticRequestStatus(id, status) {
+  await updateWithOfflineSupport('diagnostic_requests', id, { status }, 'diagnostic_requests');
+  return status;
 }
 
 // === CHILD VACCINE TRACKING ===

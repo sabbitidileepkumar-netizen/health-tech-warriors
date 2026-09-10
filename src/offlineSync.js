@@ -2,7 +2,7 @@
 // Queues writes made while offline and syncs them to Firestore when back online.
 
 import { db } from './firebase.js';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { getLocal, saveLocal } from './dataStore.js';
 
 const QUEUE_KEY = 'carelink_pending_sync';
@@ -79,7 +79,7 @@ export async function saveWithOfflineSupport(collectionName, data, localListKey)
 
 function queueForLater(collectionName, data, tempId, localListKey) {
   const queue = getQueue();
-  queue.push({ collectionName, data, tempId, localListKey, queuedAt: Date.now() });
+  queue.push({ operation: 'create', collectionName, data, tempId, localListKey, queuedAt: Date.now() });
   saveQueue(queue);
 }
 
@@ -87,6 +87,41 @@ function replaceOptimisticRecord(localListKey, tempId, realRecord) {
   const list = getLocal(localListKey);
   const updated = list.map((item) => (item.id === tempId ? { ...realRecord, _pendingSync: false } : item));
   saveLocal(localListKey, updated);
+}
+
+// Updates are also stored locally first. If the record itself is still waiting
+// to be created, merge the update into that queued create instead of losing it.
+export async function updateWithOfflineSupport(collectionName, recordId, updates, localListKey) {
+  const now = new Date().toISOString();
+  const nextUpdates = { ...updates, updatedAt: now };
+  const currentList = getLocal(localListKey);
+  saveLocal(
+    localListKey,
+    currentList.map((item) => (item.id === recordId ? { ...item, ...nextUpdates, _pendingSync: !navigator.onLine } : item))
+  );
+
+  const queue = getQueue();
+  const queuedCreate = queue.find((item) => item.operation !== 'update' && item.tempId === recordId);
+  if (queuedCreate) {
+    queuedCreate.data = { ...queuedCreate.data, ...nextUpdates };
+    saveQueue(queue);
+    return;
+  }
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    queue.push({ operation: 'update', collectionName, recordId, data: nextUpdates, localListKey, queuedAt: Date.now() });
+    saveQueue(queue);
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, collectionName, recordId), nextUpdates);
+    notifyStatus();
+  } catch (err) {
+    console.warn('Update failed, queueing for later sync:', err.message);
+    queue.push({ operation: 'update', collectionName, recordId, data: nextUpdates, localListKey, queuedAt: Date.now() });
+    saveQueue(queue);
+  }
 }
 
 // Retries the queue automatically whenever the device reconnects
@@ -119,11 +154,19 @@ export async function syncPendingQueue() {
 
   for (const item of queue) {
     try {
-      const docRef = await addDoc(collection(db, item.collectionName), {
-        ...item.data,
-        createdAt: serverTimestamp()
-      });
-      replaceOptimisticRecord(item.localListKey, item.tempId, { id: docRef.id, ...item.data });
+      if (item.operation === 'update') {
+        await updateDoc(doc(db, item.collectionName, item.recordId), item.data);
+        const list = getLocal(item.localListKey);
+        saveLocal(item.localListKey, list.map((record) => (
+          record.id === item.recordId ? { ...record, ...item.data, _pendingSync: false } : record
+        )));
+      } else {
+        const docRef = await addDoc(collection(db, item.collectionName), {
+          ...item.data,
+          createdAt: serverTimestamp()
+        });
+        replaceOptimisticRecord(item.localListKey, item.tempId, { id: docRef.id, ...item.data });
+      }
     } catch (err) {
       console.warn('Still cannot sync, will retry later:', err.message);
       remaining.push(item);

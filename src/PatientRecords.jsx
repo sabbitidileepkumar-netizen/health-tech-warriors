@@ -1,17 +1,34 @@
 ﻿import React, { useEffect, useState } from "react";
-import { getLocal } from "./dataStore";
+import { subscribeToCollection } from "./dataStore";
 
 function PatientRecords({ onBack }) {
   const [patients, setPatients] = useState([]);
   const [triageRecords, setTriageRecords] = useState([]);
   const [reminders, setReminders] = useState([]);
+  const [referrals, setReferrals] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [consultations, setConsultations] = useState([]);
+  const [diagnostics, setDiagnostics] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
 
   useEffect(() => {
-    setPatients(getLocal("patients"));
-    setTriageRecords(getLocal("triage_records"));
-    setReminders(getLocal("medicine_reminders"));
+    const unsubPatients = subscribeToCollection("patients", setPatients);
+    const unsubTriage = subscribeToCollection("triage_records", setTriageRecords);
+    const unsubReminders = subscribeToCollection("medicine_reminders", setReminders);
+    const unsubReferrals = subscribeToCollection("referrals", setReferrals);
+    const unsubAppointments = subscribeToCollection("appointments", setAppointments);
+    const unsubConsultations = subscribeToCollection("teleconsultations", setConsultations);
+    const unsubDiagnostics = subscribeToCollection("diagnostic_requests", setDiagnostics);
+    return () => {
+      unsubPatients();
+      unsubTriage();
+      unsubReminders();
+      unsubReferrals();
+      unsubAppointments();
+      unsubConsultations();
+      unsubDiagnostics();
+    };
   }, []);
 
   const filtered = patients.filter((p) =>
@@ -20,15 +37,24 @@ function PatientRecords({ onBack }) {
     p.phone?.includes(search)
   );
 
-  const getPatientHistory = (name) =>
-    triageRecords.filter((t) => t.patientName?.toLowerCase() === name.toLowerCase());
+  const recordMatchesPatient = (record, patient) =>
+    record.patientId === patient.id ||
+    record.patientId === patient.uid ||
+    record.patientName?.toLowerCase() === patient.name?.toLowerCase();
 
-  const getPatientMeds = (name) =>
-    reminders.filter((m) => m.patientName?.toLowerCase() === name.toLowerCase());
+  const getPatientHistory = (patient) =>
+    triageRecords.filter((t) => recordMatchesPatient(t, patient));
+
+  const getPatientMeds = (patient) =>
+    reminders.filter((m) => recordMatchesPatient(m, patient));
 
   if (selectedPatient) {
-    const history = getPatientHistory(selectedPatient.name);
-    const meds = getPatientMeds(selectedPatient.name);
+    const history = getPatientHistory(selectedPatient);
+    const meds = getPatientMeds(selectedPatient);
+    const patientReferrals = referrals.filter((item) => recordMatchesPatient(item, selectedPatient));
+    const patientAppointments = appointments.filter((item) => recordMatchesPatient(item, selectedPatient));
+    const patientConsultations = consultations.filter((item) => recordMatchesPatient(item, selectedPatient));
+    const patientDiagnostics = diagnostics.filter((item) => recordMatchesPatient(item, selectedPatient));
 
     return (
       <div className="page-content">
@@ -83,6 +109,28 @@ function PatientRecords({ onBack }) {
                     Symptoms: {h.symptoms?.join(", ") || "None"}
                   </p>
                 </div>
+              ))}
+            </div>
+          )}
+
+          <h3 style={{ borderTop: "1px solid var(--border)", paddingTop: "12px", marginBottom: "8px" }}>
+            📅 Care Coordination
+          </h3>
+          {patientAppointments.length + patientConsultations.length + patientDiagnostics.length + patientReferrals.length === 0 ? (
+            <p style={{ fontSize: "13px", color: "#94A3B8" }}>No appointments, remote consultations, tests, or referrals recorded yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "7px", marginBottom: "14px" }}>
+              {patientAppointments.map((item) => (
+                <TimelineItem key={`appointment-${item.id}`} icon="📅" title={`Appointment · ${item.facility}`} status={item.status} detail={`${item.appointmentDate || "Date pending"}${item.appointmentTime ? ` · ${item.appointmentTime}` : ""}${item.reason ? ` · ${item.reason}` : ""}`} />
+              ))}
+              {patientConsultations.map((item) => (
+                <TimelineItem key={`consult-${item.id}`} icon="📹" title={`${item.mode || "Remote"} consultation`} status={item.status} detail={`${item.scheduledDate || "Date pending"}${item.scheduledTime ? ` · ${item.scheduledTime}` : ""}${item.reason ? ` · ${item.reason}` : ""}`} />
+              ))}
+              {patientDiagnostics.map((item) => (
+                <TimelineItem key={`diagnostic-${item.id}`} icon="🧪" title={`${item.testType} · ${item.facility}`} status={item.status} detail={`${item.preferredDate || "Date pending"}${item.reason ? ` · ${item.reason}` : ""}`} />
+              ))}
+              {patientReferrals.map((item) => (
+                <TimelineItem key={`referral-${item.id}`} icon="🏥" title={`Referral · ${item.facility || item.referredTo}`} status={item.status} detail={item.reason || item.chiefComplaint || "Referral created"} />
               ))}
             </div>
           )}
@@ -168,3 +216,15 @@ function PatientRecords({ onBack }) {
 }
 
 export default PatientRecords;
+
+function TimelineItem({ icon, title, status, detail }) {
+  return (
+    <div style={{ padding: "9px 10px", background: "#F8FAFC", borderRadius: "8px", border: "1px solid var(--border)", fontSize: "12px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
+        <strong>{icon} {title}</strong>
+        <span className="badge" style={{ background: "#E0F2FE", color: "#075985", fontSize: "10px" }}>{status || "REQUESTED"}</span>
+      </div>
+      <p style={{ margin: "3px 0 0", fontSize: "11px", color: "#475569" }}>{detail}</p>
+    </div>
+  );
+}

@@ -20,7 +20,8 @@ import {
   BarChart3,
   Search,
   ArrowRight,
-  UserCheck
+  UserCheck,
+  Video
 } from "lucide-react";
 
 export function HomeDashboard({ onNavigate, t, lang = "en", ashaProfile }) {
@@ -131,6 +132,13 @@ export function HomeDashboard({ onNavigate, t, lang = "en", ashaProfile }) {
       icon: <Hospital size={24} color="#D97706" />,
       color: "#D97706",
       bg: "#FFFBEB"
+    },
+    {
+      key: "care",
+      label: lang === "te" ? "చికిత్స సమన్వయం" : lang === "hi" ? "देखभाल समन्वय" : lang === "mr" ? "सेवा समन्वय" : "Care Coordination",
+      icon: <Video size={24} color="#7E22CE" />,
+      color: "#7E22CE",
+      bg: "#F3E8FF"
     },
     {
       key: "hospital",

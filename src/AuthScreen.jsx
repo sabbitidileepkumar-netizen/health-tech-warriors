@@ -25,6 +25,32 @@ export function AuthScreen({ lang, setLang, t }) {
 
   const villages = ["Relangi", "Tanuku", "Attili", "K.S. Gattu"];
 
+  const authErrorMessage = (err, fallback) => {
+    const messages = {
+      "auth/invalid-credential": "Invalid email or password.",
+      "auth/email-already-in-use": "Email already registered. Please log in instead.",
+      "auth/weak-password": "Use a password with at least 6 characters.",
+      "auth/invalid-email": "Enter a valid email address.",
+      "auth/network-request-failed": "We could not reach the sign-in service. Check your connection and try again.",
+      "auth/operation-not-allowed": "Email/password sign-in is not enabled for this Firebase project.",
+      "auth/internal-error": "The sign-in service is temporarily unavailable. Please try again, or use a demo login while it is restored.",
+      "auth/too-many-requests": "Too many attempts. Please wait a few minutes and try again."
+    };
+    const english = messages[err?.code] || fallback;
+    if (lang !== "te") return english;
+    const telugu = {
+      "auth/invalid-credential": "ఇమెయిల్ లేదా పాస్‌వర్డ్ తప్పు.",
+      "auth/email-already-in-use": "ఈ ఇమెయిల్ ఇప్పటికే నమోదు అయింది. దయచేసి లాగిన్ అవ్వండి.",
+      "auth/weak-password": "కనీసం 6 అక్షరాల పాస్‌వర్డ్ ఉపయోగించండి.",
+      "auth/invalid-email": "చెల్లుబాటు అయ్యే ఇమెయిల్ నమోదు చేయండి.",
+      "auth/network-request-failed": "సైన్-ఇన్ సేవను చేరలేకపోయాం. కనెక్షన్‌ను తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.",
+      "auth/operation-not-allowed": "ఈ Firebase ప్రాజెక్ట్‌లో ఇమెయిల్/పాస్‌వర్డ్ సైన్-ఇన్ ప్రారంభించబడలేదు.",
+      "auth/internal-error": "సైన్-ఇన్ సేవ తాత్కాలికంగా అందుబాటులో లేదు. మళ్లీ ప్రయత్నించండి లేదా డెమో లాగిన్ ఉపయోగించండి.",
+      "auth/too-many-requests": "చాలా ప్రయత్నాలు జరిగాయి. కొన్ని నిమిషాలు ఆగి మళ్లీ ప్రయత్నించండి."
+    };
+    return telugu[err?.code] || english;
+  };
+
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -45,7 +71,7 @@ export function AuthScreen({ lang, setLang, t }) {
             : "Password reset instructions sent to your email."
         );
       } catch (err) {
-        setError(err.message || "Failed to send reset link.");
+        setError(authErrorMessage(err, "Failed to send reset link."));
       } finally {
         setLoading(false);
       }
@@ -70,12 +96,7 @@ export function AuthScreen({ lang, setLang, t }) {
         });
       }
     } catch (err) {
-      const msg = err.code === "auth/invalid-credential"
-        ? (lang === "te" ? "తప్పు ఇమెయిల్ లేదా పాస్‌వర్డ్." : "Invalid email or password.")
-        : err.code === "auth/email-already-in-use"
-        ? (lang === "te" ? "ఈ ఇమెయిల్ ఇప్పటికే వాడుకలో ఉంది." : "Email already registered.")
-        : (err.message || "Authentication failed.");
-      setError(msg);
+      setError(authErrorMessage(err, "Authentication failed. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -91,10 +112,10 @@ export function AuthScreen({ lang, setLang, t }) {
         setError("Sign-in cancelled.");
       } else if (err.code === "auth/unauthorized-domain") {
         setError(
-          "Google sign-in is not authorized on this domain in Firebase Console. You can use Email/Password or 1-Click Demo Login below."
+          "Google sign-in is not authorized for this site yet. A project administrator must add this domain in Firebase Authentication → Settings → Authorized domains. You can still use Email/Password or Demo Login."
         );
       } else {
-        setError(err.message || "Google sign-in could not be completed.");
+        setError(authErrorMessage(err, "Google sign-in could not be completed."));
       }
     } finally {
       setLoading(false);
